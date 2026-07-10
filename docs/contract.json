@@ -1,0 +1,34 @@
+{
+  "document_id": "PID-BLUEPRINT-001",
+  "entities": [
+    {
+      "node_id": "PUMP-101A",
+      "entity_type": "EQUIPMENT",
+      "description": "Main cooling water pump"
+    },
+    {
+      "node_id": "VALVE-204",
+      "entity_type": "EQUIPMENT",
+      "description": "Manual shut-off valve upstream of pump"
+    },
+    {
+      "node_id": "OISD-STD-119",
+      "entity_type": "COMPLIANCE_STANDARD",
+      "description": "Safety standard for pump inspection"
+    }
+  ],
+  "relationships": [
+    {
+      "source_node": "VALVE-204",
+      "target_node": "PUMP-101A",
+      "relation_type": "CONNECTED_TO",
+      "context": "Valve controls water inflow to cooling pump."
+    },
+    {
+      "source_node": "PUMP-101A",
+      "target_node": "OISD-STD-119",
+      "relation_type": "GOVERNED_BY",
+      "context": "Pump requires quarterly inspection per OISD standard."
+    }
+  ]
+}
