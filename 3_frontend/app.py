@@ -30,6 +30,12 @@ for p in (str(KG_DIR), str(ROOT)):
 from graph_builder import GraphRAGBuilder
 from graph_search  import GraphSearchEngine
 
+# ── Read clicked node from URL query params (set by JS bridge) ────────────────
+_qp_node = st.query_params.get("node", "")
+if _qp_node and _qp_node != st.session_state.get("selected_node", ""):
+    st.session_state["selected_node"] = _qp_node
+    st.session_state["inspector_expanded"] = True
+
 # ── Page config ────────────────────────────────────────────────────────────────
 st.set_page_config(
     page_title="AI-HackerZ | Industrial GraphRAG",
@@ -602,13 +608,67 @@ with tab_graph:
             ctx   = data.get("context", "")
             net.add_edge(u, v, label=rtype, title=ctx)
 
-        # Render
+        # ── Inject click-to-inspect JS bridge into PyVis HTML ──────────────────
         html_path = "/tmp/graph_viz.html"
         net.save_graph(html_path)
         with open(html_path, "r", encoding="utf-8") as f:
             html_content = f.read()
 
-        components.html(html_content, height=620, scrolling=False)
+        click_bridge_js = """
+<script>
+// Wait for the vis-network to be ready, then attach click handler
+function attachClickBridge() {
+  if (typeof network !== 'undefined') {
+    network.on("click", function(params) {
+      if (params.nodes.length > 0) {
+        var nodeId = params.nodes[0];
+        // Highlight the clicked node
+        network.selectNodes([nodeId]);
+        // Store in parent window's sessionStorage so polling bridge can pick it up
+        try { window.parent.sessionStorage.setItem('__pyvis_clicked__', nodeId); } catch(e) {}
+        // Also paint a subtle ring on the node
+        network.setSelection({nodes: [nodeId]}, {highlightEdges: true});
+      }
+    });
+    // Hover cursor
+    network.on("hoverNode", function() {
+      document.body.style.cursor = 'pointer';
+    });
+    network.on("blurNode", function() {
+      document.body.style.cursor = 'default';
+    });
+  } else {
+    setTimeout(attachClickBridge, 200);
+  }
+}
+attachClickBridge();
+</script>
+"""
+        html_content = html_content.replace("</body>", click_bridge_js + "</body>")
+
+        # Render graph
+        components.html(html_content, height=630, scrolling=False)
+
+        # ── Invisible polling bridge: reads sessionStorage, navigates to ?node= ──
+        components.html("""
+<script>
+(function() {
+  function poll() {
+    try {
+      var nodeId = window.parent.sessionStorage.getItem('__pyvis_clicked__');
+      if (nodeId) {
+        window.parent.sessionStorage.removeItem('__pyvis_clicked__');
+        var url = new URL(window.parent.location.href);
+        url.searchParams.set('node', nodeId);
+        // Navigate parent → triggers Streamlit rerun with ?node=<id>
+        window.parent.location.href = url.toString();
+      }
+    } catch(e) {}
+  }
+  setInterval(poll, 250);
+})();
+</script>
+""", height=0, scrolling=False)
 
         # Legend
         st.markdown("""
@@ -627,19 +687,28 @@ with tab_graph:
     except ImportError:
         st.warning("⚠️ `pyvis` not installed. Run: `pip install pyvis`")
 
-    # ── Node inspector ──────────────────────────────────────────────────────────
     st.markdown("<hr style='border-color:rgba(0,229,255,.1); margin:1.2rem 0;'>", unsafe_allow_html=True)
-    section_header("🔎", "Node Inspector", "Select a node to see its full context from the graph")
+    section_header("🔎", "Node Inspector", "Click any node in the graph above — or select below")
 
     all_ids = builder.get_all_node_ids()
+
+    # Auto-select from click bridge (via session_state set from query params)
+    preselect = st.session_state.get("selected_node", "")
+    default_idx = 0
+    opts = ["— choose a node —"] + all_ids
+    if preselect in all_ids:
+        default_idx = opts.index(preselect)
+
     selected = st.selectbox(
         "Select node",
-        ["— choose a node —"] + all_ids,
+        opts,
+        index=default_idx,
         label_visibility="collapsed",
+        key="node_inspector_select",
     )
-
+    # Sync back: if user picks manually, keep session state updated
     if selected and selected != "— choose a node —":
-        st.session_state.selected_node = selected
+        st.session_state["selected_node"] = selected
         with st.spinner("Extracting local context…"):
             context = builder.extract_local_context(selected)
         if context:
