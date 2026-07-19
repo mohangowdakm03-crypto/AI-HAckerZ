@@ -1,0 +1,29 @@
+// Offline Edge-Computing GraphRAG Pipeline
+digraph {
+	bgcolor="#1E1E1E" pad=0.5 rankdir=LR size="12,8"
+	node [border=0 color="#00E5FF" fillcolor="#2D2D2D" fontcolor=white fontname=Helvetica fontsize=12 margin=0.3 penwidth=1.5 shape=box style="filled,rounded"]
+	A [label="Raw Documents
+(PDFs, Manuals)
+[Offline]" color="#546E7A" fillcolor="#37474F"]
+	B [label="Ollama Local LLM
+Llama 3.2 3B
+[Extraction]" color="#FF9800" fillcolor="#E65100"]
+	C [label="JSON Data Contract
+[The Bridge]" color="#FFEB3B" fillcolor="#F57F17" fontcolor=black]
+	D [label="NetworkX Graph
+Engine
+[In-Memory]" color="#4CAF50" fillcolor="#1B5E20"]
+	E [label="Streamlit UI
++ PyVis Dash
+[Local App]" color="#03A9F4" fillcolor="#01579B"]
+	F [label="Ollama Synthesis
+[Local Inference]" color="#FF9800" fillcolor="#E65100"]
+	edge [color="#00E5FF" fontcolor="#00E5FF" fontname=Helvetica fontsize=10 penwidth=1.5]
+	A -> B [label=" Parsing"]
+	B -> C [label=" Output strict schema"]
+	C -> D [label=" Ingest Nodes/Edges"]
+	D -> E [label=" Render UI"]
+	E -> D [label=" NL Query"]
+	D -> F [label=" Sub-graph Context"]
+	F -> E [label=" Final Answer"]
+}

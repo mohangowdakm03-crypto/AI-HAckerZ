@@ -1,0 +1,61 @@
+{
+  "document_id": "BATCH-RUN-2026",
+  "entities": [
+    {
+      "node_id": "PUMP-101A",
+      "entity_type": "EQUIPMENT",
+      "description": "primary cooling water pump for the reactor system"
+    },
+    {
+      "node_id": "VALVE-204",
+      "entity_type": "EQUIPMENT",
+      "description": "regulates the intake flow"
+    },
+    {
+      "node_id": "TEMP-SENS-08",
+      "entity_type": "SENSOR",
+      "description": "monitors the casing temperature"
+    },
+    {
+      "node_id": "MOTOR-305",
+      "entity_type": "EQUIPMENT",
+      "description": "MOTOR-305 drives the primary circulation system."
+    },
+    {
+      "node_id": "SAFETY-PROTOCOL-02",
+      "entity_type": "COMPLIANCE_STANDARD",
+      "description": "It is governed by the SAFETY-PROTOCOL-02 standard."
+    },
+    {
+      "node_id": "ALARM-CIRCUIT-01",
+      "entity_type": "EQUIPMENT",
+      "description": "If MOTOR-305 overheats, it triggers the ALARM-CIRCUIT-01."
+    }
+  ],
+  "relationships": [
+    {
+      "source_node": "PUMP-101A",
+      "target_node": "VALVE-204",
+      "relation_type": "CONNECTED_TO",
+      "context": "directly connected to VALVE-204, which regulates the intake flow"
+    },
+    {
+      "source_node": "PUMP-101A",
+      "target_node": "TEMP-SENS-08",
+      "relation_type": "MONITORS",
+      "context": "During operations, TEMP-SENS-08 monitors the casing temperature"
+    },
+    {
+      "source_node": "MOTOR-305",
+      "target_node": "SAFETY-PROTOCOL-02",
+      "relation_type": "GOVERNED_BY",
+      "context": "It is governed by the SAFETY-PROTOCOL-02 standard."
+    },
+    {
+      "source_node": "MOTOR-305",
+      "target_node": "ALARM-CIRCUIT-01",
+      "relation_type": "CAUSES",
+      "context": "If MOTOR-305 overheats, it triggers the ALARM-CIRCUIT-01."
+    }
+  ]
+}

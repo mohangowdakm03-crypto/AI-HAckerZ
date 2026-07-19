@@ -1,0 +1,34 @@
+{
+  "document_id": "DOC-001",
+  "entities": [
+    {
+      "node_id": "PUMP-101A",
+      "entity_type": "EQUIPMENT",
+      "description": "Primary cooling water pump for the reactor system"
+    },
+    {
+      "node_id": "VALVE-204",
+      "entity_type": "EQUIPMENT",
+      "description": "Regulates the intake flow"
+    },
+    {
+      "node_id": "TEMP-SENS-08",
+      "entity_type": "SENSOR",
+      "description": "Monitors the casing temperature"
+    }
+  ],
+  "relationships": [
+    {
+      "source_node": "PUMP-101A",
+      "target_node": "VALVE-204",
+      "relation_type": "CONNECTED_TO",
+      "context": "Directly connected to regulate intake flow"
+    },
+    {
+      "source_node": "TEMP-SENS-08",
+      "target_node": "PUMP-101A",
+      "relation_type": "MONITORS",
+      "context": "Monitors casing temperature of the pump"
+    }
+  ]
+}

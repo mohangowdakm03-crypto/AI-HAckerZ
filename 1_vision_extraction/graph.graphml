@@ -1,0 +1,49 @@
+<?xml version='1.0' encoding='utf-8'?>
+<graphml xmlns="http://graphml.graphdrawing.org/xmlns" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://graphml.graphdrawing.org/xmlns http://graphml.graphdrawing.org/xmlns/1.0/graphml.xsd">
+  <key id="d3" for="edge" attr.name="context" attr.type="string" />
+  <key id="d2" for="edge" attr.name="relation_type" attr.type="string" />
+  <key id="d1" for="node" attr.name="description" attr.type="string" />
+  <key id="d0" for="node" attr.name="entity_type" attr.type="string" />
+  <graph edgedefault="directed">
+    <node id="PUMP-101A">
+      <data key="d0">EQUIPMENT</data>
+      <data key="d1">primary cooling water pump for the reactor system</data>
+    </node>
+    <node id="VALVE-204">
+      <data key="d0">EQUIPMENT</data>
+      <data key="d1">regulates the intake flow</data>
+    </node>
+    <node id="TEMP-SENS-08">
+      <data key="d0">SENSOR</data>
+      <data key="d1">monitors the casing temperature</data>
+    </node>
+    <node id="MOTOR-305">
+      <data key="d0">EQUIPMENT</data>
+      <data key="d1">MOTOR-305 drives the primary circulation system.</data>
+    </node>
+    <node id="SAFETY-PROTOCOL-02">
+      <data key="d0">COMPLIANCE_STANDARD</data>
+      <data key="d1">It is governed by the SAFETY-PROTOCOL-02 standard.</data>
+    </node>
+    <node id="ALARM-CIRCUIT-01">
+      <data key="d0">EQUIPMENT</data>
+      <data key="d1">If MOTOR-305 overheats, it triggers the ALARM-CIRCUIT-01.</data>
+    </node>
+    <edge source="PUMP-101A" target="VALVE-204">
+      <data key="d2">CONNECTED_TO</data>
+      <data key="d3">directly connected to VALVE-204, which regulates the intake flow</data>
+    </edge>
+    <edge source="PUMP-101A" target="TEMP-SENS-08">
+      <data key="d2">MONITORS</data>
+      <data key="d3">During operations, TEMP-SENS-08 monitors the casing temperature</data>
+    </edge>
+    <edge source="MOTOR-305" target="SAFETY-PROTOCOL-02">
+      <data key="d2">GOVERNED_BY</data>
+      <data key="d3">It is governed by the SAFETY-PROTOCOL-02 standard.</data>
+    </edge>
+    <edge source="MOTOR-305" target="ALARM-CIRCUIT-01">
+      <data key="d2">CAUSES</data>
+      <data key="d3">If MOTOR-305 overheats, it triggers the ALARM-CIRCUIT-01.</data>
+    </edge>
+  </graph>
+</graphml>

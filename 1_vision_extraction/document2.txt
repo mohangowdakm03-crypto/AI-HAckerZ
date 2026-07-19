@@ -1,0 +1,3 @@
+MOTOR-305 drives the primary circulation system.
+It is governed by the SAFETY-PROTOCOL-02 standard.
+If MOTOR-305 overheats, it triggers the ALARM-CIRCUIT-01.

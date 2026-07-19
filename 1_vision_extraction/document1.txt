@@ -1,0 +1,3 @@
+PUMP-101A is the primary cooling water pump for the reactor system.
+It is directly connected to VALVE-204, which regulates the intake flow.
+During operations, TEMP-SENS-08 monitors the casing temperature.
