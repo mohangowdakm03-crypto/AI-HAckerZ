@@ -1,0 +1,15 @@
+# UI & Visualization
+streamlit>=1.30.0
+pyvis==0.3.2
+networkx>=3.0
+
+# LLM & Local Inference
+ollama>=0.1.6
+
+# Data Processing & Parsing
+pydantic>=2.0.0
+PyMuPDF>=1.23.0
+pandas>=2.0.0
+
+# Image & Vision (optional, for batch extraction)
+pillow>=10.0.0

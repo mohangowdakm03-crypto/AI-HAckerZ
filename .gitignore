@@ -1,0 +1,35 @@
+# Virtual environments
+.venv/
+venv/
+env/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env.bak/
+venv.bak/
+
+# Streamlit/PyVis temporary files
+/tmp/
+graph_viz.html
+
+# Ignore auto-generated output graphs, but keep input/demo jsons
+data/graph.graphml
+
+# Extracted PyVis libraries that shouldn't be versioned directly
+lib/
+
+# Mac/OS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Env variables
+.env
