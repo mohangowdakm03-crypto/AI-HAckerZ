@@ -8,9 +8,9 @@ font = "sans serif"
 
 [server]
 headless = true
-gatherUsageStats = false
 enableCORS = false
 enableXsrfProtection = false
 
 [browser]
 gatherUsageStats = false
+
