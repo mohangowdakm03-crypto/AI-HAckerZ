@@ -35,6 +35,7 @@ _qp_node = st.query_params.get("node", "")
 if _qp_node and _qp_node != st.session_state.get("selected_node", ""):
     st.session_state["selected_node"] = _qp_node
     st.session_state["inspector_expanded"] = True
+    st.session_state["prefill_query"] = f"Tell me everything about {_qp_node}."
 
 # ── Page config ────────────────────────────────────────────────────────────────
 st.set_page_config(
@@ -790,13 +791,24 @@ with tab_query:
     else:
         # ── Example queries ──
         st.markdown('<p style="color:#8888aa; font-size:.8rem; margin-bottom:.4rem;">QUICK QUERIES</p>', unsafe_allow_html=True)
-        sample_queries = [
-            "What does PUMP-101A connect to?",
-            "Which sensors monitor the cooling system?",
+        import random
+        all_equip = [n for n in builder.get_all_node_ids() if builder.get_node_info(n).get("entity_type") == "EQUIPMENT"]
+        all_hazards = [n for n in builder.get_all_node_ids() if builder.get_node_info(n).get("entity_type") == "HAZARD"]
+        all_sensors = [n for n in builder.get_all_node_ids() if builder.get_node_info(n).get("entity_type") == "SENSOR"]
+        
+        sample_queries = []
+        if all_equip: sample_queries.append(f"What does {all_equip[0]} connect to?")
+        if all_hazards: sample_queries.append(f"How do we mitigate {all_hazards[0]}?")
+        if all_sensors: sample_queries.append(f"What does {all_sensors[0]} monitor?")
+        
+        # Fill the rest with general queries to reach 5 buttons
+        general_qs = [
             "What hazards exist in the plant?",
             "What safety standards govern operations?",
             "Describe the emergency shutdown procedure.",
+            "What are the main risks?"
         ]
+        sample_queries.extend(general_qs[:max(0, 5 - len(sample_queries))])
         cols = st.columns(len(sample_queries))
         for i, q in enumerate(sample_queries):
             if cols[i].button(f"💬 {q[:22]}…" if len(q) > 22 else f"💬 {q}", key=f"sample_{i}", use_container_width=True):
