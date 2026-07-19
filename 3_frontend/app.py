@@ -14,6 +14,7 @@ import json
 import time
 import streamlit as st
 from pathlib import Path
+from typing import Dict, List
 
 # ── Path bootstrap ─────────────────────────────────────────────────────────────
 ROOT = Path(__file__).resolve().parent.parent          # repo root
@@ -425,6 +426,41 @@ with st.sidebar:
 
     st.markdown("<hr style='border-color:rgba(0,229,255,.15);'>", unsafe_allow_html=True)
 
+    # ── Fault Risk Leaderboard ──
+    if st.session_state.graph_loaded and st.session_state.builder:
+        _b = st.session_state.builder
+        _all = _b.get_all_node_ids()
+        risk_scores = {}
+        for _nid in _all:
+            _info = _b.get_node_info(_nid)
+            if _info and _info.get("entity_type") == "EQUIPMENT":
+                _hazards  = sum(1 for _, _, d in _b.graph.in_edges(_nid, data=True)
+                                if _b.get_node_info(_) and
+                                   _b.get_node_info(_).get("entity_type") == "HAZARD")
+                _sensors  = sum(1 for _, _, d in _b.graph.in_edges(_nid, data=True)
+                                if _b.get_node_info(_) and
+                                   _b.get_node_info(_).get("entity_type") == "SENSOR")
+                _has_esd  = any(d.get("relation_type") in ("INITIATES","TRIGGERS")
+                                for _, _, d in _b.graph.out_edges(_nid, data=True))
+                risk_scores[_nid] = _hazards * 40 + _sensors * 15 + (20 if not _has_esd else 0)
+
+        if risk_scores:
+            st.markdown('<p style="color:#8888aa; font-size:.75rem; letter-spacing:.5px; margin-bottom:.5rem;">⚠️ FAULT RISK LEADERBOARD</p>', unsafe_allow_html=True)
+            for _nid, _score in sorted(risk_scores.items(), key=lambda x: x[1], reverse=True):
+                _color = "#ff6b35" if _score >= 50 else "#f59e0b" if _score >= 20 else "#39ff14"
+                _label = "HIGH" if _score >= 50 else "MED" if _score >= 20 else "LOW"
+                st.markdown(f"""
+                <div style="display:flex; justify-content:space-between; align-items:center;
+                            background:rgba(0,0,0,.2); border-left:3px solid {_color};
+                            border-radius:6px; padding:.35rem .6rem; margin:.25rem 0;">
+                  <span style="color:#f0f0f5; font-size:.78rem; font-family:'JetBrains Mono',monospace;">{_nid}</span>
+                  <span style="color:{_color}; font-size:.7rem; font-weight:700;">{_label}</span>
+                </div>
+                """, unsafe_allow_html=True)
+            st.markdown("<div style='height:.3rem'></div>", unsafe_allow_html=True)
+
+    st.markdown("<hr style='border-color:rgba(0,229,255,.15);'>", unsafe_allow_html=True)
+
     # ── Filter ──
     st.markdown('<p style="color:#8888aa; font-size:.75rem; letter-spacing:.5px; margin-bottom:.4rem;">FILTER BY TYPE</p>', unsafe_allow_html=True)
     filter_type = st.selectbox("", ["ALL","EQUIPMENT","SENSOR","PROCEDURE","HAZARD","COMPLIANCE_STANDARD"], label_visibility="collapsed")
@@ -468,10 +504,11 @@ if not st.session_state.graph_loaded:
 builder: GraphRAGBuilder = st.session_state.builder
 engine: GraphSearchEngine = st.session_state.engine
 
-tab_graph, tab_query, tab_explorer, tab_contract = st.tabs([
+tab_graph, tab_query, tab_explorer, tab_risk, tab_contract = st.tabs([
     "📊  Knowledge Graph",
     "🤖  AI Query Interface",
     "🔍  Node Explorer",
+    "⚠️  Risk Analysis",
     "📋  Data Contract",
 ])
 
@@ -631,6 +668,48 @@ with tab_graph:
         else:
             st.warning("No context found for this node.")
 
+    # ── Path Finder ─────────────────────────────────────────────────────────────
+    st.markdown("<hr style='border-color:rgba(0,229,255,.1); margin:1.2rem 0;'>", unsafe_allow_html=True)
+    section_header("🔗", "Relationship Path Finder", "Trace the shortest connection between any two nodes")
+
+    if engine is not None:
+        all_ids_pf = builder.get_all_node_ids()
+        pf_col1, pf_col2 = st.columns(2)
+        src_node = pf_col1.selectbox("From node", ["— select source —"] + all_ids_pf, key="pf_src", label_visibility="visible")
+        tgt_node = pf_col2.selectbox("To node",   ["— select target —"] + all_ids_pf, key="pf_tgt", label_visibility="visible")
+
+        if st.button("🔍  Find Path", key="find_path_btn"):
+            if src_node.startswith("—") or tgt_node.startswith("—"):
+                st.warning("Please select both a source and a target node.")
+            elif src_node == tgt_node:
+                st.info("Source and target are the same node.")
+            else:
+                with st.spinner("Tracing relationship path…"):
+                    path = engine.find_path(src_node, tgt_node)
+                if path:
+                    path_ctx = engine.format_path_as_context(path)
+                    st.success(f"✅ Path found! {len(path)-1} hop(s): **{' → '.join(path)}**")
+                    # Visual hop chain
+                    hop_html = ""
+                    COLOR_MAP_PF = {"EQUIPMENT":"#00e5ff","SENSOR":"#a78bfa","PROCEDURE":"#39ff14",
+                                    "HAZARD":"#ff6b35","COMPLIANCE_STANDARD":"#f59e0b"}
+                    for i, nid in enumerate(path):
+                        inf = builder.get_node_info(nid)
+                        et  = inf.get("entity_type","UNKNOWN") if inf else "UNKNOWN"
+                        c   = COLOR_MAP_PF.get(et,"#8888aa")
+                        hop_html += f"<span style='background:rgba(0,0,0,.3); border:1px solid {c}55; border-radius:8px; padding:.3rem .7rem; color:{c}; font-family:monospace; font-size:.85rem;'>{nid}</span>"
+                        if i < len(path)-1:
+                            edge_d = builder.graph.get_edge_data(path[i], path[i+1]) or {}
+                            rel    = edge_d.get("relation_type","→")
+                            hop_html += f"<span style='color:#8888aa; margin:0 .4rem; font-size:.8rem;'>──[{rel}]──▶</span>"
+                    st.markdown(f"<div style='display:flex; flex-wrap:wrap; gap:.4rem; align-items:center; margin:.8rem 0;'>{hop_html}</div>", unsafe_allow_html=True)
+                    with st.expander("📄 Full path context (sent to LLM)"):
+                        st.code(path_ctx, language="text")
+                else:
+                    st.error(f"❌ No path found between **{src_node}** and **{tgt_node}** in either direction.")
+    else:
+        st.info("Load the graph engine first to use the path finder.")
+
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # TAB 2 ─ AI Query Interface
@@ -761,7 +840,86 @@ with tab_explorer:
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# TAB 4 ─ Data Contract Viewer
+# TAB 4 ─ Risk Analysis
+# ═══════════════════════════════════════════════════════════════════════════════
+with tab_risk:
+    section_header("⚠️", "Fault Risk Analysis", "Automated risk scoring for all equipment nodes based on graph topology")
+
+    all_ids_r = builder.get_all_node_ids()
+    risk_data = []
+    for nid in all_ids_r:
+        info = builder.get_node_info(nid)
+        if not info or info.get("entity_type") != "EQUIPMENT":
+            continue
+        hazards  = [(src, d) for src, _, d in builder.graph.in_edges(nid, data=True)
+                    if builder.get_node_info(src) and
+                       builder.get_node_info(src).get("entity_type") == "HAZARD"]
+        sensors  = [(src, d) for src, _, d in builder.graph.in_edges(nid, data=True)
+                    if builder.get_node_info(src) and
+                       builder.get_node_info(src).get("entity_type") == "SENSOR"]
+        procs    = [(tgt, d) for _, tgt, d in builder.graph.out_edges(nid, data=True)
+                    if builder.get_node_info(tgt) and
+                       builder.get_node_info(tgt).get("entity_type") == "PROCEDURE"]
+        has_redundancy = any(d.get("relation_type") == "HAS_REDUNDANCY"
+                             for _, _, d in builder.graph.out_edges(nid, data=True))
+        score = len(hazards) * 40 + (max(0, 2 - len(sensors)) * 15) + (0 if procs else 25) + (0 if has_redundancy else 10)
+        risk_data.append({
+            "node_id": nid,
+            "desc": info.get("description", ""),
+            "hazards": len(hazards),
+            "sensors": len(sensors),
+            "procedures": len(procs),
+            "redundancy": has_redundancy,
+            "score": score,
+        })
+    risk_data.sort(key=lambda x: x["score"], reverse=True)
+
+    if not risk_data:
+        st.info("No EQUIPMENT nodes found in the graph.")
+    else:
+        st.markdown(f'<p style="color:#8888aa; font-size:.8rem;">Analysed <b style="color:#f0f0f5;">{len(risk_data)}</b> equipment nodes · Score = f(hazards linked, sensor coverage, ESD procedures, redundancy)</p>', unsafe_allow_html=True)
+        st.markdown("<div style='height:.5rem'></div>", unsafe_allow_html=True)
+
+        for rd in risk_data:
+            score   = rd["score"]
+            color   = "#ff6b35" if score >= 50 else "#f59e0b" if score >= 20 else "#39ff14"
+            label   = "🔴 HIGH RISK" if score >= 50 else "🟠 MEDIUM RISK" if score >= 20 else "🟢 LOW RISK"
+            bar_pct = min(100, int(score * 1.2))
+            st.markdown(f"""
+            <div style="background:#13131a; border:1px solid {color}33; border-left:4px solid {color};
+                        border-radius:12px; padding:1rem 1.2rem; margin:.5rem 0;">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:.5rem;">
+                <span style="color:{color}; font-family:'JetBrains Mono',monospace; font-weight:700; font-size:1rem;">{rd['node_id']}</span>
+                <span style="color:{color}; font-size:.8rem; font-weight:600;">{label} &nbsp;|&nbsp; Score: {score}</span>
+              </div>
+              <div style="background:#0d0d0f; border-radius:4px; height:6px; margin-bottom:.7rem;">
+                <div style="width:{bar_pct}%; background:linear-gradient(90deg,{color},{color}88); height:6px; border-radius:4px;"></div>
+              </div>
+              <p style="color:#b0b0cc; font-size:.8rem; margin:0 0 .5rem;">{rd['desc']}</p>
+              <div style="display:flex; gap:1.5rem; font-size:.78rem; color:#8888aa;">
+                <span>⚡ Hazards linked: <b style="color:{color};">{rd['hazards']}</b></span>
+                <span>📡 Sensors monitoring: <b style="color:#a78bfa;">{rd['sensors']}</b></span>
+                <span>📋 ESD procedures: <b style="color:#39ff14;">{rd['procedures']}</b></span>
+                <span>♻️ Redundancy: <b style="color:#{'39ff14' if rd['redundancy'] else 'ff6b35'};">
+                  {'Yes' if rd['redundancy'] else 'No'}</b></span>
+              </div>
+            </div>
+            """, unsafe_allow_html=True)
+
+        st.markdown("<hr style='border-color:rgba(0,229,255,.1); margin:1.2rem 0;'>", unsafe_allow_html=True)
+        st.markdown("""
+        <div style="background:#13131a; border:1px solid rgba(0,229,255,.1);
+                    border-radius:12px; padding:1rem 1.2rem;">
+          <p style="color:#8888aa; font-size:.78rem; margin:0 0 .4rem;">SCORING FORMULA</p>
+          <p style="color:#f0f0f5; font-size:.85rem; font-family:'JetBrains Mono',monospace; margin:0;">
+            Score = (Hazards × 40) + (Missing sensors × 15) + (No ESD proc × 25) + (No redundancy × 10)
+          </p>
+        </div>
+        """, unsafe_allow_html=True)
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# TAB 5 ─ Data Contract Viewer
 # ═══════════════════════════════════════════════════════════════════════════════
 with tab_contract:
     section_header("📋", "Raw Data Contract", f"Source: {GRAPH_JSON}")

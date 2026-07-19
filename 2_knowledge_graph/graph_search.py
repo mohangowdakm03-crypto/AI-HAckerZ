@@ -2,14 +2,46 @@
 Graph Search Engine - GraphRAG Query Interface
 Loads a persisted knowledge graph and answers user queries using local Ollama inference
 with grounded, graph-extracted context.
+
+Improvements (v2):
+  - Fuzzy + partial substring search via difflib (handles semantic near-matches)
+  - Synonym/domain keyword expansion for industrial terms
+  - find_path() for shortest-path traversal between any two nodes
 """
 
 import json
 import os
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
+from difflib import SequenceMatcher
 import networkx as nx
 import ollama
+
+# ── Industrial domain synonym map ─────────────────────────────────────────────
+# Maps natural-language query terms → graph vocabulary.
+# Allows queries like "pump failure" to match HAZARD / EQUIPMENT nodes.
+SYNONYM_MAP: Dict[str, List[str]] = {
+    "failure":    ["hazard", "risk", "fault", "overheating", "cavitation"],
+    "pump":       ["pump", "equipment"],
+    "sensor":     ["sensor", "monitor", "temperature", "pressure", "flow", "vibration"],
+    "safety":     ["compliance_standard", "iso", "iec", "procedure", "shutdown"],
+    "shutdown":   ["procedure", "emergency", "shutdown"],
+    "risk":       ["hazard", "risk", "overheating", "cavitation"],
+    "compliance": ["compliance_standard", "iso", "iec"],
+    "standard":   ["compliance_standard", "iso", "iec"],
+    "procedure":  ["procedure", "maintenance", "shutdown"],
+    "valve":      ["valve", "equipment"],
+    "temperature":["sensor", "temp"],
+    "pressure":   ["sensor", "press"],
+    "vibration":  ["sensor", "vibration"],
+    "flow":       ["sensor", "flow", "valve"],
+    "maintenance":["procedure", "preventive"],
+    "overheating":["hazard", "overheating", "temperature"],
+    "cavitation": ["hazard", "cavitation", "pressure"],
+    "emergency":  ["procedure", "emergency", "shutdown"],
+    "cooling":    ["pump", "equipment", "heat"],
+    "heat":       ["equipment", "heat", "exchanger"],
+}
 
 
 class GraphSearchEngine:
@@ -77,15 +109,17 @@ class GraphSearchEngine:
 
     def find_relevant_nodes(self, query: str, top_k: int = 5) -> List[Tuple[str, float]]:
         """
-        Find nodes relevant to a query using simple keyword matching.
-        This is a basic implementation; advanced versions can use embeddings or BM25.
+        Find nodes relevant to a query using multi-signal scoring:
+          1. Exact/partial keyword match against node_id, entity_type, description
+          2. Fuzzy similarity via SequenceMatcher (catches typos and near-matches)
+          3. Synonym expansion using the industrial SYNONYM_MAP
 
         Args:
             query: User query string
             top_k: Number of top results to return
 
         Returns:
-            List of (node_id, relevance_score) tuples
+            List of (node_id, relevance_score) tuples, sorted descending
         """
         if self.graph is None:
             return []
@@ -93,33 +127,124 @@ class GraphSearchEngine:
         query_lower = query.lower()
         query_words = set(query_lower.split())
 
-        node_scores = {}
+        # ── Expand query with industrial synonyms ────────────────────────────
+        expanded_terms: set = set(query_words)
+        for word in query_words:
+            if word in SYNONYM_MAP:
+                expanded_terms.update(SYNONYM_MAP[word])
+
+        node_scores: Dict[str, float] = {}
 
         for node_id in self.graph.nodes():
-            node_attrs = self.graph.nodes[node_id]
+            node_attrs  = self.graph.nodes[node_id]
             description = node_attrs.get('description', '').lower()
             entity_type = node_attrs.get('entity_type', '').lower()
-
-            # Calculate relevance score
+            node_lower  = node_id.lower()
             score = 0.0
-            description_words = set(description.split())
-            matching_words = query_words & description_words
 
+            # ── Signal 1: Exact word overlap in description ───────────────────
+            desc_words      = set(description.split())
+            matching_words  = query_words & desc_words
             if matching_words:
-                score += len(matching_words) * 2.0  # Weight word matches in description
+                score += len(matching_words) * 2.0
 
+            # ── Signal 2: Synonym-expanded overlap in description/type ────────
+            expanded_desc_matches = expanded_terms & (desc_words | set(entity_type.split('_')))
+            if expanded_desc_matches:
+                score += len(expanded_desc_matches) * 1.5
+
+            # ── Signal 3: Entity type exact/partial match ─────────────────────
             if query_lower in entity_type or entity_type in query_lower:
-                score += 3.0  # Weight entity type matches
+                score += 3.0
+            for term in expanded_terms:
+                if term in entity_type:
+                    score += 1.5
 
-            if node_id.lower() in query_lower or query_lower in node_id.lower():
-                score += 2.0  # Weight node ID matches
+            # ── Signal 4: Node ID substring match (e.g. "pump" → "PUMP-101A") ─
+            for word in query_words:
+                if len(word) >= 3 and word in node_lower:
+                    score += 2.5
+            if node_lower in query_lower or query_lower in node_lower:
+                score += 2.0
+
+            # ── Signal 5: Fuzzy similarity (catches "overheatin" → "OVERHEATING-RISK") ──
+            fuzzy_against_node = SequenceMatcher(None, query_lower, node_lower).ratio()
+            if fuzzy_against_node > 0.55:
+                score += fuzzy_against_node * 3.0
+
+            fuzzy_against_desc = SequenceMatcher(None, query_lower, description[:120]).ratio()
+            if fuzzy_against_desc > 0.4:
+                score += fuzzy_against_desc * 2.0
 
             if score > 0:
                 node_scores[node_id] = score
 
-        # Sort by score and return top_k
         sorted_nodes = sorted(node_scores.items(), key=lambda x: x[1], reverse=True)
         return sorted_nodes[:top_k]
+
+    def find_path(self, source_node: str, target_node: str) -> Optional[List[str]]:
+        """
+        Find the shortest directed path between two nodes in the graph.
+        Falls back to undirected search if no directed path exists.
+
+        Args:
+            source_node: Starting node ID
+            target_node: Destination node ID
+
+        Returns:
+            Ordered list of node IDs representing the path, or None if unreachable
+        """
+        if self.graph is None:
+            return None
+        if source_node not in self.graph.nodes() or target_node not in self.graph.nodes():
+            return None
+        try:
+            # Try directed path first
+            return nx.shortest_path(self.graph, source=source_node, target=target_node)
+        except nx.NetworkXNoPath:
+            try:
+                # Fall back to undirected (ignoring edge direction)
+                undirected = self.graph.to_undirected()
+                return nx.shortest_path(undirected, source=source_node, target=target_node)
+            except nx.NetworkXNoPath:
+                return None
+        except nx.NodeNotFound:
+            return None
+
+    def format_path_as_context(self, path: List[str]) -> str:
+        """
+        Renders a node path as a human-readable relationship chain for the LLM.
+
+        Args:
+            path: Ordered list of node IDs
+
+        Returns:
+            Formatted string describing the relationship chain
+        """
+        if not path or self.graph is None:
+            return ""
+
+        lines = ["=" * 60, "RELATIONSHIP PATH CONTEXT", "=" * 60, ""]
+        for i, node_id in enumerate(path):
+            node_attrs = self.graph.nodes.get(node_id, {})
+            etype = node_attrs.get('entity_type', 'UNKNOWN')
+            desc  = node_attrs.get('description', '')
+            lines.append(f"[{i+1}] {node_id}  ({etype})")
+            lines.append(f"     {desc}")
+
+            if i < len(path) - 1:
+                next_id = path[i + 1]
+                edge_data = self.graph.get_edge_data(node_id, next_id) or \
+                            self.graph.get_edge_data(next_id, node_id) or {}
+                rel   = edge_data.get('relation_type', '——')
+                ctx   = edge_data.get('context', '')
+                lines.append(f"       ↓ [{rel}]")
+                if ctx:
+                    lines.append(f"         ({ctx})")
+            lines.append("")
+
+        lines.append("=" * 60)
+        return "\n".join(lines)
 
     def extract_context_neighborhood(self, node_ids: List[str], depth: int = 1) -> str:
         """
