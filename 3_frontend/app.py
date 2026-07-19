@@ -463,7 +463,7 @@ with st.sidebar:
 
     # ── Filter ──
     st.markdown('<p style="color:#8888aa; font-size:.75rem; letter-spacing:.5px; margin-bottom:.4rem;">FILTER BY TYPE</p>', unsafe_allow_html=True)
-    filter_type = st.selectbox("", ["ALL","EQUIPMENT","SENSOR","PROCEDURE","HAZARD","COMPLIANCE_STANDARD"], label_visibility="collapsed")
+    filter_type = st.selectbox("Filter by entity type", ["ALL","EQUIPMENT","SENSOR","PROCEDURE","HAZARD","COMPLIANCE_STANDARD"], label_visibility="collapsed")
     st.session_state.filter_type = filter_type
 
     st.markdown("<hr style='border-color:rgba(0,229,255,.15);'>", unsafe_allow_html=True)
@@ -591,13 +591,12 @@ with tab_graph:
             title  = f"<b style='color:{color}'>{node_id}</b><br><em style='color:#8888aa'>{etype}</em><br>{desc}"
             net.add_node(node_id, label=node_id, color=color, size=size, title=title)
 
+        # Build a set of nodes actually added to PyVis (may be filtered)
+        added_nodes = set(net.get_nodes())
+
         for u, v, data in builder.graph.edges(data=True):
-            u_type = builder.get_node_info(u)
-            v_type = builder.get_node_info(v)
-            if ft != "ALL" and (
-                (u_type and u_type.get("entity_type") != ft) and
-                (v_type and v_type.get("entity_type") != ft)
-            ):
+            # Only add edge if BOTH endpoints were added to the PyVis graph
+            if u not in added_nodes or v not in added_nodes:
                 continue
             rtype = data.get("relation_type", "")
             ctx   = data.get("context", "")
