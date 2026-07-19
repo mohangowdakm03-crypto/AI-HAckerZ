@@ -75,7 +75,7 @@ CRITICAL RULES:
             graph_data["document_id"] = "DOC-MANUAL-001"
 
         # 5. Save output locally for Person 2
-        output_dir = "data"
+        output_dir = "../data"
         os.makedirs(output_dir, exist_ok=True)
         output_path = os.path.join(output_dir, "mock_contract.json")
         

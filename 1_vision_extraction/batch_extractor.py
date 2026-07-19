@@ -36,7 +36,7 @@ class BatchExtractor:
 
     ALLOWED_ENTITY_TYPES = {"EQUIPMENT", "SENSOR", "PROCEDURE", "HAZARD", "COMPLIANCE_STANDARD"}
 
-    def __init__(self, inputs_dir: str = "inputs", output_dir: str = "data"):
+    def __init__(self, inputs_dir: str = "../data/raw_documents", output_dir: str = "../data"):
         self.inputs_dir = inputs_dir
         self.output_dir = output_dir
         self.system_prompt = self._build_system_prompt()
@@ -438,7 +438,7 @@ CRITICAL RULES:
 
 
 def main():
-    extractor = BatchExtractor(inputs_dir='inputs', output_dir='data')
+    extractor = BatchExtractor(inputs_dir='../data/raw_documents', output_dir='../data')
     success, message = extractor.process_batch()
 
     if success:

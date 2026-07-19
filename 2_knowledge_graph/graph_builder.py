@@ -18,7 +18,7 @@ class GraphRAGBuilder:
     Provides local context extraction for LLM inference.
     """
     
-    def __init__(self, data_contract_path: str = "data/graph_input.json"):
+    def __init__(self, data_contract_path: str = "../data/graph_input.json"):
         """
         Initialize the GraphRAG builder.
         
@@ -265,7 +265,7 @@ def main():
     print("="*70 + "\n")
     
     # Initialize builder
-    builder = GraphRAGBuilder(data_contract_path="data/graph_input.json")
+    builder = GraphRAGBuilder(data_contract_path="../data/graph_input.json")
     
     # Load data contract
     if not builder.load_data_contract():
@@ -279,7 +279,7 @@ def main():
     
     # Save graph to disk
     print("\n[*] Saving graph to disk...")
-    graph_output_path = "data/graph.graphml"
+    graph_output_path = "../data/graph.graphml"
     try:
         nx.write_graphml(builder.graph, graph_output_path)
         print(f"[✓] Graph saved to: {graph_output_path}")

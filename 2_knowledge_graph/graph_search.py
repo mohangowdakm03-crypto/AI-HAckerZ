@@ -18,7 +18,7 @@ class GraphSearchEngine:
     Loads a pre-built NetworkX graph and retrieves grounded context for LLM inference.
     """
 
-    def __init__(self, graph_path: str = "data/graph.graphml", data_contract_path: str = "data/graph_input.json"):
+    def __init__(self, graph_path: str = "../data/graph.graphml", data_contract_path: str = "../data/graph_input.json"):
         """
         Initialize the Graph Search Engine.
 
@@ -280,7 +280,7 @@ def interactive_search():
     print("="*70 + "\n")
 
     # Initialize search engine
-    engine = GraphSearchEngine(graph_path="data/graph.graphml", data_contract_path="data/graph_input.json")
+    engine = GraphSearchEngine(graph_path="../data/graph.graphml", data_contract_path="../data/graph_input.json")
 
     # Load graph
     if not engine.load_graph():
