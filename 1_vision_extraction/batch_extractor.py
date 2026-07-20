@@ -451,7 +451,8 @@ CRITICAL RULES:
         if p.suffix.lower() == '.pdf':
             text_content = self._extract_text_from_pdf(p)
         else:
-            text_content = self._extract_text_from_txt(p)
+            with open(p, 'r', encoding='utf-8') as fh:
+                text_content = fh.read()
 
         if not text_content or not text_content.strip():
             print("   [!] File is empty or unreadable.")
