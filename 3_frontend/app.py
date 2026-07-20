@@ -3,9 +3,6 @@ Person 3 - Full-Stack Integration Lead
 3_frontend/app.py
 
 Elite industrial GraphRAG dashboard. Fully offline, zero cloud dependencies.
-Integrates with:
-  - 2_knowledge_graph/graph_builder.py  → builds + holds the NetworkX graph
-  - 2_knowledge_graph/graph_search.py   → keyword search + Ollama synthesis
 """
 
 import sys
@@ -16,8 +13,8 @@ import streamlit as st
 from pathlib import Path
 from typing import Dict, List
 
-# ── Path bootstrap ─────────────────────────────────────────────────────────────
-ROOT = Path(__file__).resolve().parent.parent
+# ── Path bootstrap ────────────────────────────────────────────────────────────
+ROOT       = Path(__file__).resolve().parent.parent
 DATA_DIR   = ROOT / "data"
 GRAPH_JSON = DATA_DIR / "graph_input.json"
 GRAPH_ML   = DATA_DIR / "graph.graphml"
@@ -28,11 +25,11 @@ for p in (str(KG_DIR), str(VIS_DIR), str(ROOT)):
     if p not in sys.path:
         sys.path.insert(0, p)
 
-from graph_builder import GraphRAGBuilder
-from graph_search  import GraphSearchEngine
+from graph_builder  import GraphRAGBuilder
+from graph_search   import GraphSearchEngine
 from batch_extractor import BatchExtractor
 
-# ── Read clicked node from URL query params (JS bridge) ──────────────────────
+# ── JS bridge — clicked node from graph ──────────────────────────────────────
 _qp_node = st.query_params.get("node", "")
 if _qp_node and _qp_node != st.session_state.get("selected_node", ""):
     st.session_state["selected_node"] = _qp_node
@@ -40,500 +37,326 @@ if _qp_node and _qp_node != st.session_state.get("selected_node", ""):
 
 # ── Page config ───────────────────────────────────────────────────────────────
 st.set_page_config(
-    page_title="AI-HackerZ | Industrial GraphRAG",
-    page_icon="⚙️",
+    page_title="AI-HackerZ | GraphRAG Brain",
+    page_icon="🧠",
     layout="wide",
     initial_sidebar_state="expanded",
 )
 
 # ══════════════════════════════════════════════════════════════════════════════
-# GLOBAL CSS — Premium dark theme with glassmorphism + neural bg animation
+# GLOBAL CSS  — Siri-meets-ChatGPT premium dark UI
 # ══════════════════════════════════════════════════════════════════════════════
 st.markdown("""
 <style>
-  /* ── Fonts ── */
-  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800&family=JetBrains+Mono:wght@400;500&display=swap');
 
-  /* ── Root palette ── */
-  :root {
-    --bg-base:      #080810;
-    --bg-card:      #0f0f1a;
-    --bg-surface:   #161625;
-    --bg-glass:     rgba(15,15,26,0.7);
-    --accent:       #00e5ff;
-    --accent-dim:   #00b8cc;
-    --accent-glow:  rgba(0,229,255,.18);
-    --accent-pulse: rgba(0,229,255,.35);
-    --warn:         #ff6b35;
-    --success:      #39ff14;
-    --purple:       #a78bfa;
-    --gold:         #f59e0b;
-    --text-pri:     #f0f0f8;
-    --text-sec:     #6b7280;
-    --border:       rgba(0,229,255,.12);
-    --border-hover: rgba(0,229,255,.3);
-  }
+/* ─── Variables ─────────────────────────────────── */
+:root {
+  --ink:        #050508;
+  --surface:    rgba(255,255,255,.04);
+  --surface2:   rgba(255,255,255,.07);
+  --glass:      rgba(12,12,20,.75);
+  --border:     rgba(255,255,255,.08);
+  --border-lit: rgba(255,255,255,.18);
+  --cyan:       #22d3ee;
+  --cyan-glow:  rgba(34,211,238,.25);
+  --violet:     #818cf8;
+  --violet-glow:rgba(129,140,248,.2);
+  --rose:       #fb7185;
+  --emerald:    #34d399;
+  --amber:      #fbbf24;
+  --txt:        rgba(255,255,255,.92);
+  --txt2:       rgba(255,255,255,.5);
+  --txt3:       rgba(255,255,255,.28);
+  --radius:     16px;
+}
 
-  /* ── Neural background — pure CSS, no canvas ── */
-  .stApp {
-    background:
-      radial-gradient(ellipse at 20% 50%, rgba(0,229,255,.04) 0%, transparent 60%),
-      radial-gradient(ellipse at 80% 20%, rgba(167,139,250,.04) 0%, transparent 55%),
-      radial-gradient(ellipse at 60% 80%, rgba(0,229,255,.03) 0%, transparent 50%),
-      #080810 !important;
-    background-attachment: fixed !important;
-  }
-  .main .block-container {
-    position: relative; z-index: 1;
-    padding: 1.5rem 2rem 2rem;
-    max-width: 100%;
-  }
+/* ─── Aurora animated background ────────────────── */
+html, body { background: var(--ink) !important; }
 
-  /* ── Base typography ── */
-  html, body, [class*="css"] { font-family: 'Inter', sans-serif; }
-  h1, h2, h3, h4 { color: var(--text-pri) !important; letter-spacing: -.3px; }
+.stApp {
+  background: var(--ink) !important;
+  position: relative;
+}
 
-  /* ── Custom scrollbar ── */
-  ::-webkit-scrollbar { width: 4px; height: 4px; }
-  ::-webkit-scrollbar-track { background: var(--bg-base); }
-  ::-webkit-scrollbar-thumb {
-    background: linear-gradient(180deg, var(--accent), var(--accent-dim));
-    border-radius: 4px;
-  }
+/* Pseudo-aurora using a Streamlit-safe approach: inject via the root div */
+[data-testid="stAppViewContainer"]::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse 80% 60% at 10% 20%,  rgba(129,140,248,.12) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 80% at 90% 80%,  rgba(34,211,238,.10)  0%, transparent 55%),
+    radial-gradient(ellipse 50% 50% at 50% 40%,  rgba(251,113,133,.06) 0%, transparent 50%),
+    radial-gradient(ellipse 70% 40% at 70% 10%,  rgba(52,211,153,.07)  0%, transparent 55%);
+  animation: aurora-drift 18s ease-in-out infinite alternate;
+}
 
-  /* ── Sidebar ── */
-  [data-testid="stSidebar"] {
-    background: linear-gradient(180deg, #0b0b18 0%, #0f0f1a 100%) !important;
-    border-right: 1px solid var(--border) !important;
-    backdrop-filter: blur(20px);
-  }
-  [data-testid="stSidebar"] * { color: var(--text-pri) !important; }
+@keyframes aurora-drift {
+  0%   { opacity: .7; transform: scale(1)   translateY(0px); }
+  50%  { opacity: 1;  transform: scale(1.06) translateY(-20px); }
+  100% { opacity: .8; transform: scale(.97)  translateY(10px); }
+}
 
-  /* ── Glass cards ── */
-  .glass-card {
-    background: var(--bg-glass);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    border: 1px solid var(--border);
-    border-radius: 16px;
-    transition: border-color .3s ease, box-shadow .3s ease;
-  }
-  .glass-card:hover {
-    border-color: var(--border-hover);
-    box-shadow: 0 0 30px var(--accent-glow);
-  }
+/* ─── Layout ─────────────────────────────────────── */
+.main .block-container {
+  position: relative; z-index: 1;
+  padding: 1.2rem 1.8rem 3rem;
+  max-width: 100%;
+}
 
-  /* ── Metric cards ── */
-  [data-testid="metric-container"] {
-    background: var(--bg-glass) !important;
-    backdrop-filter: blur(16px) !important;
-    border: 1px solid var(--border) !important;
-    border-radius: 14px !important;
-    padding: .8rem 1rem !important;
-    transition: all .3s ease !important;
-  }
-  [data-testid="metric-container"]:hover {
-    border-color: var(--border-hover) !important;
-    box-shadow: 0 0 20px var(--accent-glow) !important;
-  }
-  [data-testid="stMetricValue"] {
-    color: var(--accent) !important;
-    font-size: 2rem !important;
-    font-weight: 700 !important;
-    font-family: 'JetBrains Mono', monospace !important;
-  }
-  [data-testid="stMetricLabel"] { color: var(--text-sec) !important; font-size: .75rem !important; letter-spacing: .5px; }
+/* ─── Typography ─────────────────────────────────── */
+html, body, [class*="css"] { font-family: 'Inter', sans-serif; }
+h1,h2,h3,h4 { color: var(--txt) !important; letter-spacing: -.4px; }
 
-  /* ── Buttons ── */
-  .stButton > button {
-    background: transparent !important;
-    color: var(--accent) !important;
-    border: 1px solid var(--accent) !important;
-    border-radius: 10px !important;
-    font-weight: 600 !important;
-    font-size: .85rem !important;
-    transition: all .25s ease !important;
-    position: relative !important;
-    overflow: hidden !important;
-  }
-  .stButton > button::before {
-    content: '';
-    position: absolute; inset: 0;
-    background: linear-gradient(135deg, var(--accent-glow), transparent);
-    opacity: 0;
-    transition: opacity .25s ease;
-  }
-  .stButton > button:hover::before { opacity: 1 !important; }
-  .stButton > button:hover {
-    box-shadow: 0 0 22px var(--accent-pulse) !important;
-    transform: translateY(-2px) !important;
-  }
-  .stButton > button:active { transform: translateY(0px) !important; }
+/* ─── Scrollbar ──────────────────────────────────── */
+::-webkit-scrollbar { width: 3px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,.12); border-radius: 8px; }
 
-  /* ── Primary action button ── */
-  .stButton > button[kind="primary"] {
-    background: linear-gradient(135deg, rgba(0,229,255,.2), rgba(0,229,255,.05)) !important;
-    box-shadow: 0 0 15px var(--accent-glow) !important;
-  }
+/* ─── Sidebar ────────────────────────────────────── */
+[data-testid="stSidebar"] {
+  background: rgba(8,8,14,.95) !important;
+  border-right: 1px solid var(--border) !important;
+  backdrop-filter: blur(40px) saturate(180%) !important;
+}
+[data-testid="stSidebar"] * { color: var(--txt) !important; }
+[data-testid="stSidebar"] p { color: var(--txt2) !important; }
 
-  /* ── Text inputs ── */
-  .stTextInput > div > div > input,
-  .stTextArea textarea {
-    background: var(--bg-surface) !important;
-    border: 1px solid var(--border) !important;
-    border-radius: 10px !important;
-    color: var(--text-pri) !important;
-    font-family: 'Inter', sans-serif !important;
-    font-size: .9rem !important;
-    transition: border-color .2s, box-shadow .2s !important;
-  }
-  .stTextInput > div > div > input:focus,
-  .stTextArea textarea:focus {
-    border-color: var(--accent) !important;
-    box-shadow: 0 0 0 3px var(--accent-glow) !important;
-  }
+/* ─── Metric cards ───────────────────────────────── */
+[data-testid="metric-container"] {
+  background: var(--surface) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: var(--radius) !important;
+  padding: .9rem 1rem !important;
+  backdrop-filter: blur(20px) !important;
+  transition: border-color .3s, box-shadow .3s !important;
+}
+[data-testid="metric-container"]:hover {
+  border-color: var(--border-lit) !important;
+}
+[data-testid="stMetricValue"] {
+  background: linear-gradient(135deg, var(--cyan), var(--violet)) !important;
+  -webkit-background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  background-clip: text !important;
+  font-size: 1.9rem !important; font-weight: 800 !important;
+  font-family: 'JetBrains Mono', monospace !important;
+}
+[data-testid="stMetricLabel"] {
+  color: var(--txt3) !important;
+  font-size: .7rem !important;
+  letter-spacing: .8px !important;
+  text-transform: uppercase !important;
+}
 
-  /* ── Selectbox ── */
-  .stSelectbox > div > div {
-    background: var(--bg-surface) !important;
-    border: 1px solid var(--border) !important;
-    border-radius: 10px !important;
-    color: var(--text-pri) !important;
-  }
+/* ─── Buttons ────────────────────────────────────── */
+.stButton > button {
+  background: var(--surface) !important;
+  color: var(--txt) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: 12px !important;
+  font-weight: 500 !important;
+  font-size: .85rem !important;
+  backdrop-filter: blur(20px) !important;
+  transition: all .2s cubic-bezier(.4,0,.2,1) !important;
+}
+.stButton > button:hover {
+  background: var(--surface2) !important;
+  border-color: var(--border-lit) !important;
+  box-shadow: 0 0 0 1px rgba(255,255,255,.1), 0 8px 32px rgba(0,0,0,.4) !important;
+  transform: translateY(-1px) !important;
+}
+.stButton > button:active { transform: translateY(0) !important; }
 
-  /* ── Tabs ── */
-  .stTabs [data-baseweb="tab-list"] {
-    background: var(--bg-glass) !important;
-    backdrop-filter: blur(12px) !important;
-    border-radius: 14px 14px 0 0 !important;
-    gap: 2px !important;
-    padding: 5px !important;
-    border-bottom: 1px solid var(--border) !important;
-  }
-  .stTabs [data-baseweb="tab"] {
-    color: var(--text-sec) !important;
-    border-radius: 10px !important;
-    font-weight: 500 !important;
-    font-size: .87rem !important;
-    padding: .5rem 1.1rem !important;
-    transition: all .2s ease !important;
-  }
-  .stTabs [data-baseweb="tab"]:hover {
-    color: var(--text-pri) !important;
-    background: rgba(0,229,255,.06) !important;
-  }
-  .stTabs [aria-selected="true"] {
-    background: linear-gradient(135deg, rgba(0,229,255,.18), rgba(0,229,255,.06)) !important;
-    color: var(--accent) !important;
-    border-bottom: 2px solid var(--accent) !important;
-    box-shadow: 0 0 12px var(--accent-glow) !important;
-  }
-  .stTabs [data-baseweb="tab-panel"] {
-    background: var(--bg-glass) !important;
-    backdrop-filter: blur(12px) !important;
-    border: 1px solid var(--border) !important;
-    border-top: none !important;
-    border-radius: 0 0 14px 14px !important;
-    padding: 1.4rem !important;
-  }
+/* Primary CTA — glowing cyan */
+.stButton > button[kind="primary"],
+.stButton > button:first-child {
+  background: linear-gradient(135deg, rgba(34,211,238,.15), rgba(129,140,248,.1)) !important;
+  border-color: rgba(34,211,238,.3) !important;
+  box-shadow: 0 0 0 0 var(--cyan-glow), inset 0 1px 0 rgba(255,255,255,.08) !important;
+}
+.stButton > button:first-child:hover {
+  box-shadow: 0 0 30px var(--cyan-glow), 0 0 60px rgba(34,211,238,.1) !important;
+}
 
-  /* ── Expanders ── */
-  .streamlit-expanderHeader {
-    background: var(--bg-glass) !important;
-    backdrop-filter: blur(12px) !important;
-    color: var(--text-pri) !important;
-    border: 1px solid var(--border) !important;
-    border-radius: 10px !important;
-    transition: border-color .2s !important;
-  }
-  .streamlit-expanderHeader:hover { border-color: var(--border-hover) !important; }
-  .streamlit-expanderContent {
-    background: var(--bg-surface) !important;
-    border: 1px solid var(--border) !important;
-    border-top: none !important;
-  }
+/* ─── Text inputs ────────────────────────────────── */
+.stTextInput > div > div > input,
+.stTextArea textarea {
+  background: var(--surface) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: 14px !important;
+  color: var(--txt) !important;
+  font-family: 'Inter', sans-serif !important;
+  font-size: .9rem !important;
+  backdrop-filter: blur(20px) !important;
+  transition: border-color .2s, box-shadow .2s !important;
+}
+.stTextInput > div > div > input:focus,
+.stTextArea textarea:focus {
+  border-color: rgba(34,211,238,.4) !important;
+  box-shadow: 0 0 0 4px rgba(34,211,238,.08), 0 0 20px rgba(34,211,238,.1) !important;
+  outline: none !important;
+}
+.stTextInput > div > div > input::placeholder,
+.stTextArea textarea::placeholder { color: var(--txt3) !important; }
 
-  /* ── Alerts ── */
-  .stAlert { border-radius: 10px !important; }
-  .stSuccess { background: rgba(57,255,20,.07) !important; border: 1px solid #39ff1444 !important; }
-  .stWarning { background: rgba(255,107,53,.07) !important; border: 1px solid #ff6b3544 !important; }
-  .stError   { background: rgba(255,50,80,.07) !important; border: 1px solid #ff335044 !important; }
-  .stInfo    { background: var(--accent-glow) !important; border: 1px solid var(--border) !important; }
+/* ─── Selectbox ──────────────────────────────────── */
+.stSelectbox > div > div {
+  background: var(--surface) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: 12px !important;
+  color: var(--txt) !important;
+  backdrop-filter: blur(20px) !important;
+}
+.stSelectbox > div > div:hover { border-color: var(--border-lit) !important; }
 
-  /* ── Spinner ── */
-  .stSpinner > div { border-top-color: var(--accent) !important; }
+/* ─── Tabs ───────────────────────────────────────── */
+.stTabs [data-baseweb="tab-list"] {
+  background: transparent !important;
+  gap: 2px !important;
+  padding: 0 !important;
+  border-bottom: 1px solid var(--border) !important;
+}
+.stTabs [data-baseweb="tab"] {
+  background: transparent !important;
+  color: var(--txt3) !important;
+  border-radius: 0 !important;
+  font-weight: 500 !important;
+  font-size: .88rem !important;
+  padding: .7rem 1.2rem !important;
+  border-bottom: 2px solid transparent !important;
+  transition: color .2s, border-color .2s !important;
+}
+.stTabs [data-baseweb="tab"]:hover { color: var(--txt2) !important; }
+.stTabs [aria-selected="true"] {
+  background: transparent !important;
+  color: var(--txt) !important;
+  border-bottom: 2px solid var(--cyan) !important;
+  text-shadow: 0 0 20px var(--cyan-glow) !important;
+}
+.stTabs [data-baseweb="tab-panel"] {
+  background: transparent !important;
+  border: none !important;
+  padding: 1.5rem 0 !important;
+}
 
-  /* ── Divider ── */
-  hr { border-color: var(--border) !important; }
+/* ─── Expanders ──────────────────────────────────── */
+.streamlit-expanderHeader {
+  background: var(--surface) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: 12px !important;
+  color: var(--txt) !important;
+  backdrop-filter: blur(20px) !important;
+  transition: border-color .2s !important;
+}
+.streamlit-expanderHeader:hover { border-color: var(--border-lit) !important; }
+.streamlit-expanderContent {
+  background: rgba(8,8,14,.6) !important;
+  border: 1px solid var(--border) !important;
+  border-top: none !important;
+  border-radius: 0 0 12px 12px !important;
+  backdrop-filter: blur(20px) !important;
+}
 
-  /* ── Code blocks (terminal style) ── */
-  .stCode, .stCodeBlock, pre, code {
-    background: #010108 !important;
-    border: 1px solid rgba(0,229,255,.15) !important;
-    border-radius: 8px !important;
-    font-family: 'JetBrains Mono', monospace !important;
-    color: #39ff14 !important;
-  }
+/* ─── Alerts ─────────────────────────────────────── */
+.stAlert { border-radius: 12px !important; backdrop-filter: blur(20px) !important; }
+.stSuccess { background: rgba(52,211,153,.07) !important; border: 1px solid rgba(52,211,153,.25) !important; }
+.stWarning { background: rgba(251,191,36,.06) !important; border: 1px solid rgba(251,191,36,.22) !important; }
+.stError   { background: rgba(251,113,133,.07) !important; border: 1px solid rgba(251,113,133,.25) !important; }
+.stInfo    { background: rgba(34,211,238,.06) !important;  border: 1px solid rgba(34,211,238,.22) !important; }
 
-  /* ── Typing cursor animation ── */
-  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
-  .typing-cursor { display: inline-block; animation: blink 1s step-start infinite; }
+/* ─── Code (terminal) ────────────────────────────── */
+.stCode, pre, code {
+  background: rgba(0,0,0,.6) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: 12px !important;
+  font-family: 'JetBrains Mono', monospace !important;
+  font-size: .82rem !important;
+  backdrop-filter: blur(20px) !important;
+}
 
-  /* ── Animated stat counter ── */
-  @keyframes countUp {
-    from { opacity: 0; transform: translateY(8px); }
-    to   { opacity: 1; transform: translateY(0); }
-  }
-  [data-testid="stMetricValue"] { animation: countUp .6s ease-out both; }
+/* ─── Progress bar ───────────────────────────────── */
+.stProgress > div > div > div {
+  background: linear-gradient(90deg, var(--cyan), var(--violet)) !important;
+  border-radius: 8px !important;
+  box-shadow: 0 0 12px var(--cyan-glow) !important;
+}
 
-  /* ── Glow pulse on ONLINE badge ── */
-  @keyframes pulse-glow {
-    0%,100% { box-shadow: 0 0 6px var(--success); }
-    50%      { box-shadow: 0 0 18px var(--success), 0 0 30px rgba(57,255,20,.3); }
-  }
-  .status-online { animation: pulse-glow 2.5s ease-in-out infinite; }
+/* ─── Spinner ────────────────────────────────────── */
+.stSpinner > div { border-top-color: var(--cyan) !important; }
 
-  /* ── Gauge animation ── */
-  @keyframes sweepIn {
-    from { stroke-dashoffset: 251; }
-  }
-  .gauge-arc { animation: sweepIn 1.2s cubic-bezier(.4,0,.2,1) both; }
+/* ─── Siri orb animations ────────────────────────── */
+@keyframes orb-float {
+  0%, 100% { transform: translateY(0px) scale(1); }
+  33%       { transform: translateY(-8px) scale(1.02); }
+  66%       { transform: translateY(4px) scale(.98); }
+}
+@keyframes orb-pulse {
+  0%, 100% { opacity: .6; transform: scale(1); }
+  50%       { opacity: 1;  transform: scale(1.15); }
+}
+@keyframes orb-ring {
+  0%   { transform: scale(.8); opacity: .8; }
+  100% { transform: scale(1.8); opacity: 0; }
+}
+@keyframes orb-active {
+  0%,100% { transform: translateY(0) scale(1); filter: brightness(1); }
+  25%     { transform: translateY(-6px) scale(1.06); filter: brightness(1.3); }
+  75%     { transform: translateY(6px) scale(.95); filter: brightness(.9); }
+}
+@keyframes shimmer {
+  0%   { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes slide-in-left {
+  from { opacity: 0; transform: translateX(-16px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+@keyframes slide-in-right {
+  from { opacity: 0; transform: translateX(16px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+@keyframes typing-blink {
+  0%,100% { opacity: 1; } 50% { opacity: 0; }
+}
+@keyframes gauge-fill {
+  from { stroke-dashoffset: 220; }
+}
+@keyframes badge-pop {
+  0%   { transform: scale(.85); opacity: 0; }
+  70%  { transform: scale(1.05); }
+  100% { transform: scale(1);   opacity: 1; }
+}
+@keyframes status-pulse {
+  0%,100% { box-shadow: 0 0 0 0 rgba(52,211,153,.5); }
+  50%     { box-shadow: 0 0 0 6px rgba(52,211,153,.0); }
+}
 
-  /* ── Activity feed entry ── */
-  @keyframes slideIn {
-    from { opacity: 0; transform: translateX(-12px); }
-    to   { opacity: 1; transform: translateX(0); }
-  }
-  .activity-entry { animation: slideIn .35s ease both; }
+.msg-user  { animation: slide-in-right .35s cubic-bezier(.4,0,.2,1) both; }
+.msg-ai    { animation: slide-in-left  .35s cubic-bezier(.4,0,.2,1) both; }
+.fade-up   { animation: fade-up .4s cubic-bezier(.4,0,.2,1) both; }
+.badge-pop { animation: badge-pop .4s cubic-bezier(.4,0,.2,1) both; }
 
-  /* ── Hop chain items ── */
-  .hop-node {
-    transition: transform .2s, box-shadow .2s;
-  }
-  .hop-node:hover {
-    transform: scale(1.04);
-    box-shadow: 0 0 16px var(--accent-glow);
-  }
+hr { border-color: var(--border) !important; margin: 1.2rem 0 !important; }
+</style>
 """, unsafe_allow_html=True)
 
-def hero_banner(stats: dict):
-    node_count = stats.get("total_nodes", "—")
-    edge_count = stats.get("total_edges", "—")
-    graph_active = stats.get("total_nodes", 0) > 0
-    status_color = "#39ff14" if graph_active else "#ff6b35"
-    status_label = "GRAPH ONLINE" if graph_active else "AWAITING INIT"
-    status_class = "status-online" if graph_active else ""
-    ts = time.strftime("%H:%M:%S")
-    st.markdown(f"""
-    <div style="
-      background: linear-gradient(135deg, #080810 0%, #0f0f1a 50%, #080d14 100%);
-      border: 1px solid rgba(0,229,255,.2);
-      border-radius: 20px;
-      padding: 1.8rem 2.2rem;
-      margin-bottom: 1.4rem;
-      position: relative;
-      overflow: hidden;
-    ">
-      <!-- Radial glow accent -->
-      <div style="position:absolute; top:-40px; right:-40px; width:280px; height:280px;
-        background:radial-gradient(ellipse, rgba(0,229,255,.08) 0%, transparent 70%);
-        pointer-events:none;"></div>
-      <div style="position:absolute; bottom:-60px; left:20%; width:200px; height:200px;
-        background:radial-gradient(ellipse, rgba(167,139,250,.05) 0%, transparent 70%);
-        pointer-events:none;"></div>
 
-      <!-- Top row -->
-      <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:1rem;">
-        <div style="display:flex; align-items:center; gap:1rem;">
-          <div style="
-            background: rgba(0,229,255,.1);
-            border: 1px solid rgba(0,229,255,.25);
-            border-radius: 14px; padding: .6rem 1rem; font-size:1.8rem;
-            box-shadow: 0 0 20px rgba(0,229,255,.15);
-          ">⚙️</div>
-          <div>
-            <h1 style="margin:0; font-size:1.65rem; font-weight:800; line-height:1.1;
-                       background:linear-gradient(90deg,#00e5ff 0%,#a78bfa 60%,#ffffff 100%);
-                       -webkit-background-clip:text; -webkit-text-fill-color:transparent;">
-              Industrial GraphRAG Brain
-            </h1>
-            <p style="margin:.3rem 0 0; color:#6b7280; font-size:.8rem; letter-spacing:.4px;">
-              Edge Computing · 100% Offline · Zero Cloud Dependency
-            </p>
-          </div>
-        </div>
-        <!-- Live status badge -->
-        <div style="display:flex; align-items:center; gap:.5rem;
-                    background:rgba(0,0,0,.3); border:1px solid {status_color}44;
-                    border-radius:10px; padding:.45rem .9rem;" class="{status_class}">
-          <span style="width:8px; height:8px; border-radius:50%;
-                       background:{status_color}; display:inline-block;"></span>
-          <span style="color:{status_color}; font-size:.75rem; font-weight:700;
-                       font-family:'JetBrains Mono',monospace; letter-spacing:.5px;">{status_label}</span>
-        </div>
-      </div>
-
-      <!-- Stats row -->
-      <div style="display:flex; gap:1.5rem; margin-top:1.2rem; flex-wrap:wrap;">
-        <div style="background:rgba(0,229,255,.07); border:1px solid rgba(0,229,255,.15);
-                    border-radius:10px; padding:.4rem .9rem;">
-          <span style="color:#6b7280; font-size:.7rem; letter-spacing:.4px;">NODES</span>
-          <span style="color:#00e5ff; font-size:1rem; font-weight:700;
-                       font-family:'JetBrains Mono',monospace; margin-left:.5rem;">{node_count}</span>
-        </div>
-        <div style="background:rgba(167,139,250,.07); border:1px solid rgba(167,139,250,.15);
-                    border-radius:10px; padding:.4rem .9rem;">
-          <span style="color:#6b7280; font-size:.7rem; letter-spacing:.4px;">EDGES</span>
-          <span style="color:#a78bfa; font-size:1rem; font-weight:700;
-                       font-family:'JetBrains Mono',monospace; margin-left:.5rem;">{edge_count}</span>
-        </div>
-        <div style="background:rgba(57,255,20,.05); border:1px solid rgba(57,255,20,.12);
-                    border-radius:10px; padding:.4rem .9rem;">
-          <span style="color:#6b7280; font-size:.7rem; letter-spacing:.4px;">LLM</span>
-          <span style="color:#39ff14; font-size:.8rem; font-weight:600; margin-left:.5rem;">Llama 3.2 Local</span>
-        </div>
-        <div style="background:rgba(245,158,11,.05); border:1px solid rgba(245,158,11,.12);
-                    border-radius:10px; padding:.4rem .9rem;">
-          <span style="color:#6b7280; font-size:.7rem; letter-spacing:.4px;">ISO</span>
-          <span style="color:#f59e0b; font-size:.8rem; font-weight:600; margin-left:.5rem;">45001 Compliant</span>
-        </div>
-        <div style="margin-left:auto; color:#6b7280; font-size:.72rem;
-                    font-family:'JetBrains Mono',monospace; align-self:center;">
-          ⏱ {ts}
-        </div>
-      </div>
-    </div>
-    """, unsafe_allow_html=True)
-
-
-def gauge_svg(score: int, color: str, size: int = 80) -> str:
-    """Render an animated SVG arc gauge for a risk score 0-100."""
-    radius = 34
-    circumference = 2 * 3.14159 * radius * 0.65   # 65% of circle = arc
-    offset = circumference * (1 - min(score, 100) / 100)
-    return f"""
-    <svg width="{size}" height="{size//2 + 10}" viewBox="0 0 80 50" style="overflow:visible;">
-      <!-- Track -->
-      <path d="M 10 45 A 30 30 0 0 1 70 45"
-            fill="none" stroke="rgba(255,255,255,.08)" stroke-width="7" stroke-linecap="round"/>
-      <!-- Arc -->
-      <path d="M 10 45 A 30 30 0 0 1 70 45"
-            fill="none" stroke="{color}" stroke-width="7" stroke-linecap="round"
-            stroke-dasharray="{circumference:.1f}" stroke-dashoffset="{offset:.1f}"
-            class="gauge-arc"
-            style="filter: drop-shadow(0 0 6px {color});"/>
-      <!-- Score text -->
-      <text x="40" y="40" text-anchor="middle" font-size="13" font-weight="700"
-            font-family="JetBrains Mono, monospace" fill="{color}">{score}</text>
-    </svg>"""
-
-
-def node_badge(node_id: str, entity_type: str, description: str):
-    color_map = {
-        "EQUIPMENT":          ("#00e5ff", "rgba(0,229,255,.08)"),
-        "SENSOR":             ("#a78bfa", "rgba(167,139,250,.08)"),
-        "PROCEDURE":          ("#39ff14", "rgba(57,255,20,.08)"),
-        "HAZARD":             ("#ff6b35", "rgba(255,107,53,.08)"),
-        "COMPLIANCE_STANDARD":("#f59e0b", "rgba(245,158,11,.08)"),
-    }
-    color, bg = color_map.get(entity_type, ("#8888aa", "rgba(136,136,170,.08)"))
-    st.markdown(f"""
-    <div style="
-      background:{bg};
-      backdrop-filter:blur(8px);
-      border:1px solid {color}30;
-      border-left:3px solid {color};
-      border-radius:12px; padding:.8rem 1.1rem; margin:.4rem 0;
-      transition: border-color .2s, box-shadow .2s;
-    " onmouseover="this.style.boxShadow='0 0 16px {color}44'"
-       onmouseout="this.style.boxShadow='none'">
-      <div style="display:flex; justify-content:space-between; align-items:center;">
-        <span style="color:{color}; font-weight:700; font-size:.93rem;
-                     font-family:'JetBrains Mono',monospace;">{node_id}</span>
-        <span style="color:{color}; font-size:.68rem; background:{color}18;
-                     border:1px solid {color}33; border-radius:20px;
-                     padding:.15rem .65rem; letter-spacing:.5px;">{entity_type}</span>
-      </div>
-      <p style="color:#9ca3af; font-size:.8rem; margin:.35rem 0 0; line-height:1.4;">{description}</p>
-    </div>
-    """, unsafe_allow_html=True)
-
-
-def chat_bubble(role: str, content: str, timestamp: str = ""):
-    if role == "user":
-        st.markdown(f"""
-        <div style="display:flex; justify-content:flex-end; margin:.8rem 0;">
-          <div style="
-            background: linear-gradient(135deg, rgba(0,229,255,.18), rgba(0,229,255,.06));
-            border: 1px solid rgba(0,229,255,.25);
-            border-radius: 18px 18px 4px 18px;
-            padding: .85rem 1.15rem; max-width: 76%;
-            backdrop-filter: blur(8px);
-          ">
-            <p style="color:#f0f0f8; margin:0; font-size:.9rem; line-height:1.55;">{content}</p>
-            <span style="color:#6b7280; font-size:.7rem;">{timestamp}</span>
-          </div>
-          <div style="width:36px; height:36px; border-radius:50%; flex-shrink:0;
-            background:rgba(0,229,255,.12); border:1px solid rgba(0,229,255,.25);
-            display:flex; align-items:center; justify-content:center;
-            margin-left:.7rem; font-size:1rem;">👤</div>
-        </div>
-        """, unsafe_allow_html=True)
-    else:
-        st.markdown(f"""
-        <div style="display:flex; justify-content:flex-start; margin:.8rem 0;">
-          <div style="width:36px; height:36px; border-radius:50%; flex-shrink:0;
-            background:rgba(57,255,20,.08); border:1px solid rgba(57,255,20,.25);
-            display:flex; align-items:center; justify-content:center;
-            margin-right:.7rem; font-size:1rem;
-            box-shadow: 0 0 12px rgba(57,255,20,.2);">⚙️</div>
-          <div style="
-            background: rgba(22,22,37,0.85);
-            backdrop-filter: blur(12px);
-            border: 1px solid rgba(255,255,255,.07);
-            border-radius: 18px 18px 18px 4px;
-            padding: .85rem 1.15rem; max-width: 76%;
-          ">
-            <p style="color:#f0f0f8; margin:0; font-size:.9rem; line-height:1.65;
-                      white-space:pre-wrap;">{content}</p>
-            <span style="color:#6b7280; font-size:.7rem;">{timestamp}</span>
-          </div>
-        </div>
-        """, unsafe_allow_html=True)
-
-
-def section_header(icon: str, title: str, subtitle: str = ""):
-    sub = f'<p style="color:#6b7280; font-size:.8rem; margin:.1rem 0 0;">{subtitle}</p>' if subtitle else ""
-    st.markdown(f"""
-    <div style="display:flex; align-items:center; gap:.75rem; margin-bottom:1.1rem;">
-      <span style="font-size:1.25rem; filter:drop-shadow(0 0 6px rgba(0,229,255,.4));">{icon}</span>
-      <div>
-        <h3 style="margin:0; font-size:1.05rem; color:#f0f0f8; font-weight:600;">{title}</h3>
-        {sub}
-      </div>
-    </div>
-    """, unsafe_allow_html=True)
-
-
-def activity_log(action: str, detail: str = "", icon: str = "◈"):
-    """Append an entry to the in-memory activity feed."""
-    if "activity_feed" not in st.session_state:
-        st.session_state.activity_feed = []
-    ts = time.strftime("%H:%M:%S")
-    st.session_state.activity_feed.insert(0, {"ts": ts, "icon": icon, "action": action, "detail": detail})
-    st.session_state.activity_feed = st.session_state.activity_feed[:12]  # keep last 12
-
-
-# ── Session state ─────────────────────────────────────────────────────────────
+# ══════════════════════════════════════════════════════════════════════════════
+# SESSION STATE
+# ══════════════════════════════════════════════════════════════════════════════
 def _init_state():
     defaults = {
-        "graph_loaded":  False,
-        "builder":       None,
-        "engine":        None,
-        "chat_history":  [],
-        "selected_node": None,
-        "graph_stats":   {},
-        "filter_type":   "ALL",
+        "graph_loaded":  False, "builder": None, "engine": None,
+        "chat_history":  [], "selected_node": None,
+        "graph_stats":   {}, "filter_type": "ALL",
         "activity_feed": [],
     }
     for k, v in defaults.items():
@@ -543,91 +366,264 @@ def _init_state():
 _init_state()
 
 
+# ── Helpers ───────────────────────────────────────────────────────────────────
+def activity_log(action: str, detail: str = "", icon: str = "◈"):
+    if "activity_feed" not in st.session_state:
+        st.session_state.activity_feed = []
+    st.session_state.activity_feed.insert(0, {
+        "ts": time.strftime("%H:%M:%S"), "icon": icon, "action": action, "detail": detail
+    })
+    st.session_state.activity_feed = st.session_state.activity_feed[:10]
+
+
 # ── Graph loader ──────────────────────────────────────────────────────────────
 @st.cache_resource(show_spinner=False)
 def load_graph_resources(json_path: str, graphml_path: str):
     builder = GraphRAGBuilder(data_contract_path=json_path)
-    if not builder.load_data_contract():
-        return None, None, "❌ Could not load data contract. Run batch_extractor.py first."
-    if not builder.build_graph():
-        return None, None, "❌ Failed to build graph."
+    if not builder.load_data_contract(): return None, None, "❌ Could not load data contract."
+    if not builder.build_graph():        return None, None, "❌ Failed to build graph."
     try:
         import networkx as nx
         nx.write_graphml(builder.graph, graphml_path)
-    except Exception:
-        pass
+    except Exception: pass
     engine = GraphSearchEngine(graph_path=graphml_path, data_contract_path=json_path)
-    if not engine.load_graph():
-        return builder, None, "⚠️ Search engine couldn't load saved graph."
+    if not engine.load_graph(): return builder, None, "⚠️ Search engine couldn't load graph."
     engine.load_data_contract()
     stats = builder.get_graph_stats()
     return builder, engine, None, stats
 
 
 # ══════════════════════════════════════════════════════════════════════════════
+# SIRI ORB COMPONENT
+# ══════════════════════════════════════════════════════════════════════════════
+def siri_orb(state: str = "idle", size: int = 100):
+    """
+    state: 'idle' | 'active' | 'online'
+    Renders a pure CSS Siri-style animated orb.
+    """
+    if state == "online":
+        c1, c2, c3 = "#22d3ee", "#818cf8", "#34d399"
+        anim = "orb-float 5s ease-in-out infinite"
+    elif state == "active":
+        c1, c2, c3 = "#818cf8", "#fb7185", "#22d3ee"
+        anim = "orb-active 1.4s ease-in-out infinite"
+    else:
+        c1, c2, c3 = "#1e3a4a", "#2d1b69", "#0f3460"
+        anim = "orb-float 7s ease-in-out infinite"
+
+    return f"""
+    <div style="position:relative; width:{size}px; height:{size}px; margin:0 auto;">
+      <!-- Outer glow ring -->
+      <div style="
+        position:absolute; inset:-14px; border-radius:50%;
+        background:conic-gradient(from 0deg, {c1}, {c2}, {c3}, {c1});
+        animation: orb-ring 3s ease-out infinite;
+        opacity:.4;
+      "></div>
+      <!-- Orb body -->
+      <div style="
+        position:absolute; inset:0; border-radius:50%;
+        background: conic-gradient(from 0deg at 40% 40%, {c1}, {c2}, {c3}, {c1});
+        animation: {anim};
+        box-shadow: 0 0 {size//2}px rgba(34,211,238,.3), 0 0 {size}px rgba(129,140,248,.15), inset 0 2px 4px rgba(255,255,255,.25);
+        filter: blur(.5px);
+      "></div>
+      <!-- Inner gloss -->
+      <div style="
+        position:absolute; top:10%; left:15%; width:38%; height:32%;
+        background: radial-gradient(ellipse, rgba(255,255,255,.45) 0%, transparent 70%);
+        border-radius:50%; pointer-events:none;
+      "></div>
+    </div>"""
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# HERO HEADER
+# ══════════════════════════════════════════════════════════════════════════════
+def render_hero(stats: dict):
+    loaded = stats.get("total_nodes", 0) > 0
+    orb_state = "online" if loaded else "idle"
+    n = stats.get("total_nodes", "—")
+    e = stats.get("total_edges", "—")
+    orb_html = siri_orb(orb_state, size=72)
+    status_dot = "#34d399" if loaded else "#6b7280"
+    status_txt = "ONLINE" if loaded else "OFFLINE"
+
+    st.markdown(f"""
+    <div class="fade-up" style="
+      display:flex; align-items:center; gap:1.5rem;
+      padding:1.6rem 2rem; margin-bottom:1.2rem;
+      background: rgba(255,255,255,.02);
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      backdrop-filter: blur(40px) saturate(150%);
+      overflow:hidden; position:relative;
+    ">
+      <!-- Left orb -->
+      <div style="flex-shrink:0;">{orb_html}</div>
+
+      <!-- Text block -->
+      <div style="flex:1; min-width:0;">
+        <div style="display:flex; align-items:center; gap:.6rem; margin-bottom:.3rem;">
+          <h1 style="margin:0; font-size:1.6rem; font-weight:800; letter-spacing:-.5px;
+            background:linear-gradient(135deg,#ffffff 0%,rgba(255,255,255,.6) 100%);
+            -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+            background-clip:text;">
+            Industrial GraphRAG Brain
+          </h1>
+          <span class="badge-pop" style="
+            background:rgba({('52,211,153' if loaded else '107,114,128')},.12);
+            border:1px solid rgba({('52,211,153' if loaded else '107,114,128')},.3);
+            border-radius:999px; padding:.2rem .7rem;
+            font-size:.65rem; font-weight:700; letter-spacing:.8px;
+            color:{'#34d399' if loaded else '#6b7280'};
+            animation: status-pulse 2s infinite;
+          ">
+            <span style="display:inline-block; width:5px; height:5px; border-radius:50%;
+              background:{status_dot}; margin-right:.35rem; vertical-align:middle;"></span>
+            {status_txt}
+          </span>
+        </div>
+        <p style="margin:0; font-size:.8rem; color:var(--txt3); letter-spacing:.2px;">
+          Edge Computing &nbsp;·&nbsp; 100% Offline &nbsp;·&nbsp; Llama 3.2 Local &nbsp;·&nbsp; ISO-45001
+        </p>
+        <!-- Stat chips -->
+        <div style="display:flex; gap:.6rem; margin-top:.8rem; flex-wrap:wrap;">
+          <span style="background:rgba(34,211,238,.08); border:1px solid rgba(34,211,238,.2);
+            border-radius:8px; padding:.3rem .75rem; font-size:.76rem; color:#22d3ee;
+            font-family:'JetBrains Mono',monospace; font-weight:600;">
+            {n} nodes
+          </span>
+          <span style="background:rgba(129,140,248,.08); border:1px solid rgba(129,140,248,.2);
+            border-radius:8px; padding:.3rem .75rem; font-size:.76rem; color:#818cf8;
+            font-family:'JetBrains Mono',monospace; font-weight:600;">
+            {e} edges
+          </span>
+          <span style="background:rgba(52,211,153,.06); border:1px solid rgba(52,211,153,.15);
+            border-radius:8px; padding:.3rem .75rem; font-size:.76rem; color:#34d399;">
+            NetworkX + PyVis
+          </span>
+        </div>
+      </div>
+
+      <!-- Time -->
+      <div style="flex-shrink:0; text-align:right; color:var(--txt3); font-size:.72rem;
+        font-family:'JetBrains Mono',monospace; line-height:1.8;">
+        {time.strftime("%H:%M")} <br>
+        {time.strftime("%d %b %Y")}
+      </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+
+# ══════════════════════════════════════════════════════════════════════════════
 # SIDEBAR
 # ══════════════════════════════════════════════════════════════════════════════
 with st.sidebar:
-    st.markdown("""
-    <div style="text-align:center; padding:1.4rem .5rem 1rem;">
-      <div style="font-size:2.4rem; margin-bottom:.4rem;
-                  filter:drop-shadow(0 0 12px rgba(0,229,255,.5));">⚙️</div>
-      <h2 style="font-size:1.05rem; margin:0; color:#00e5ff; letter-spacing:.8px;
-                 font-weight:700;">AI-HackerZ</h2>
-      <p style="color:#6b7280; font-size:.72rem; margin:.3rem 0 0; letter-spacing:.3px;">
-        GraphRAG Control Panel
-      </p>
+    # Brand
+    st.markdown(f"""
+    <div style="padding:1.5rem 1rem 1rem; text-align:center;">
+      {siri_orb("idle" if not st.session_state.graph_loaded else "online", size=56)}
+      <div style="margin-top:.8rem;">
+        <div style="font-size:.95rem; font-weight:700; color:var(--txt); letter-spacing:.3px;">AI-HackerZ</div>
+        <div style="font-size:.7rem; color:var(--txt3); margin-top:.15rem;">GraphRAG Control Panel</div>
+      </div>
     </div>
-    <hr style="border-color:rgba(0,229,255,.12); margin:.5rem 0 1rem;">
+    <div style="height:1px; background:var(--border); margin:0 .5rem .8rem;"></div>
     """, unsafe_allow_html=True)
 
-    # ── Load graph button ──
+    # Graph init
     if not st.session_state.graph_loaded:
         if st.button("⚡  Initialize Graph Engine", use_container_width=True):
-            steps = [
-                ("Parsing data contract…", .3),
-                ("Building NetworkX graph…", .5),
-                ("Calibrating search engine…", .9),
-            ]
-            prog_bar = st.progress(0, text="Starting…")
-            for txt, pct in steps:
-                prog_bar.progress(pct, text=txt)
-                time.sleep(0.3)
+            prog = st.progress(0, text="Parsing data contract…")
+            time.sleep(.3); prog.progress(35, text="Building NetworkX graph…")
+            time.sleep(.3); prog.progress(70, text="Calibrating search engine…")
             result = load_graph_resources(str(GRAPH_JSON), str(GRAPH_ML))
-            prog_bar.empty()
+            prog.progress(100, text="Done!")
+            time.sleep(.2); prog.empty()
             if len(result) == 4:
                 builder, engine, err, stats = result
             else:
-                builder, engine, err = result
-                stats = {}
+                builder, engine, err = result; stats = {}
             if err and not builder:
                 st.error(err)
             else:
-                st.session_state.builder      = builder
-                st.session_state.engine       = engine
-                st.session_state.graph_loaded = True
-                st.session_state.graph_stats  = stats or {}
-                activity_log("Graph engine initialised", f"{stats.get('total_nodes',0)} nodes · {stats.get('total_edges',0)} edges", "⚡")
-                if err:
-                    st.warning(err)
-                else:
-                    st.success("Graph ready!")
+                st.session_state.update({
+                    "builder": builder, "engine": engine,
+                    "graph_loaded": True, "graph_stats": stats or {},
+                })
+                activity_log("Graph engine initialised",
+                             f"{stats.get('total_nodes',0)} nodes", "⚡")
+                if err: st.warning(err)
                 st.rerun()
     else:
-        st.markdown('<p style="color:#39ff14; font-size:.82rem; text-align:center; letter-spacing:.3px;">✅ &nbsp;Graph Engine Active</p>', unsafe_allow_html=True)
-        if st.button("🔄  Reload Graph", use_container_width=True):
+        st.markdown("""
+        <div style="text-align:center; padding:.4rem;
+          background:rgba(52,211,153,.07); border:1px solid rgba(52,211,153,.2);
+          border-radius:10px; font-size:.8rem; color:#34d399; font-weight:600;
+          margin-bottom:.4rem;">
+          ✓ &nbsp;Graph Engine Active
+        </div>
+        """, unsafe_allow_html=True)
+        if st.button("↺  Reload Graph", use_container_width=True):
             load_graph_resources.clear()
-            for k in ["graph_loaded", "builder", "engine", "graph_stats", "selected_node"]:
-                st.session_state[k] = None if k not in ["graph_loaded"] else False
-            activity_log("Graph reloaded", "", "🔄")
+            for k in ["graph_loaded","builder","engine","graph_stats","selected_node"]:
+                st.session_state[k] = False if k == "graph_loaded" else None
             st.rerun()
 
-    st.markdown("<hr style='border-color:rgba(0,229,255,.12);'>", unsafe_allow_html=True)
+    st.markdown("<div style='height:1px;background:var(--border);margin:.8rem 0;'></div>", unsafe_allow_html=True)
 
-    # ── Live document upload ──
-    with st.expander("📄 Live Document Upload"):
-        st.markdown("<p style='font-size:.78rem; color:#6b7280;'>Upload a TXT or PDF — AI extracts entities and merges them live.</p>", unsafe_allow_html=True)
-        uploaded_file = st.file_uploader("Upload file", type=["txt", "pdf"], label_visibility="collapsed")
+    # Stats
+    stats = st.session_state.graph_stats or {}
+    if stats:
+        c1, c2 = st.columns(2)
+        c1.metric("Nodes", stats.get("total_nodes", 0))
+        c2.metric("Edges", stats.get("total_edges", 0))
+        st.markdown(f"""
+        <div style="font-size:.74rem; color:var(--txt3); line-height:2.1; margin-top:.3rem; padding:0 .2rem;">
+          <div>Directed &nbsp;<span style="color:var(--cyan);">{'Yes' if stats.get('is_directed') else 'No'}</span></div>
+          <div>Connected &nbsp;<span style="color:{'#34d399' if stats.get('is_connected') else '#fb7185'};">{'Yes' if stats.get('is_connected') else 'No'}</span></div>
+          <div>Avg degree &nbsp;<span style="color:var(--violet);">{stats.get('average_out_degree',0):.2f}</span></div>
+        </div>
+        """, unsafe_allow_html=True)
+
+    st.markdown("<div style='height:1px;background:var(--border);margin:.8rem 0;'></div>", unsafe_allow_html=True)
+
+    # Risk leaderboard
+    if st.session_state.graph_loaded and st.session_state.builder:
+        _b = st.session_state.builder
+        risk_scores = {}
+        for _nid in _b.get_all_node_ids():
+            _info = _b.get_node_info(_nid)
+            if _info and _info.get("entity_type") == "EQUIPMENT":
+                _h = sum(1 for src,_,d in _b.graph.in_edges(_nid,data=True)
+                         if _b.get_node_info(src) and _b.get_node_info(src).get("entity_type")=="HAZARD")
+                _s = sum(1 for src,_,d in _b.graph.in_edges(_nid,data=True)
+                         if _b.get_node_info(src) and _b.get_node_info(src).get("entity_type")=="SENSOR")
+                risk_scores[_nid] = _h*40 + _s*15
+        if risk_scores:
+            st.markdown('<div style="font-size:.68rem; color:var(--txt3); letter-spacing:.7px; text-transform:uppercase; margin-bottom:.4rem;">⚠ Fault Risk</div>', unsafe_allow_html=True)
+            for _nid, _score in sorted(risk_scores.items(), key=lambda x:x[1], reverse=True)[:5]:
+                _color = "#fb7185" if _score>=50 else "#fbbf24" if _score>=20 else "#34d399"
+                _pct = min(100, int(_score))
+                st.markdown(f"""
+                <div style="margin:.25rem 0;">
+                  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:.2rem;">
+                    <span style="font-size:.72rem; color:var(--txt2); font-family:'JetBrains Mono',monospace;">{_nid[:16]}</span>
+                    <span style="font-size:.65rem; color:{_color}; font-weight:700;">{_score}</span>
+                  </div>
+                  <div style="height:2px; background:rgba(255,255,255,.06); border-radius:4px;">
+                    <div style="width:{_pct}%; height:2px; background:{_color}; border-radius:4px;
+                      box-shadow:0 0 6px {_color}88;"></div>
+                  </div>
+                </div>""", unsafe_allow_html=True)
+
+    st.markdown("<div style='height:1px;background:var(--border);margin:.8rem 0;'></div>", unsafe_allow_html=True)
+
+    # Live upload
+    with st.expander("📎 Live Document Ingest"):
+        st.markdown("<p style='font-size:.76rem; color:var(--txt3);'>Drop a TXT/PDF — AI extracts & merges live.</p>", unsafe_allow_html=True)
+        uploaded_file = st.file_uploader("", type=["txt","pdf"], label_visibility="collapsed")
         if uploaded_file is not None:
             if st.button("🚀 Extract & Merge", use_container_width=True):
                 raw_dir = DATA_DIR / "raw_documents"
@@ -635,153 +631,95 @@ with st.sidebar:
                 tmp_path = raw_dir / uploaded_file.name
                 with open(tmp_path, "wb") as f:
                     f.write(uploaded_file.getbuffer())
-                with st.spinner(f"Extracting from {uploaded_file.name}… (~30-90s)"):
+                with st.spinner(f"Extracting {uploaded_file.name}…"):
                     extractor = BatchExtractor(inputs_dir=str(raw_dir), output_dir=str(DATA_DIR))
                     success = extractor.process_single_file_and_merge(str(tmp_path), str(GRAPH_JSON))
                 if success:
                     st.success("Merged into graph!")
-                    activity_log(f"Doc uploaded: {uploaded_file.name}", "Knowledge merged into graph", "📄")
+                    activity_log(f"Doc ingested: {uploaded_file.name}", "", "📎")
                     load_graph_resources.clear()
-                    for k in ["graph_loaded", "builder", "engine", "graph_stats", "selected_node"]:
-                        st.session_state[k] = None if k not in ["graph_loaded"] else False
+                    for k in ["graph_loaded","builder","engine","graph_stats","selected_node"]:
+                        st.session_state[k] = False if k=="graph_loaded" else None
                     st.rerun()
                 else:
-                    st.error("Extraction failed or no data found.")
+                    st.error("Extraction failed.")
 
-    st.markdown("<hr style='border-color:rgba(0,229,255,.12);'>", unsafe_allow_html=True)
+    st.markdown("<div style='height:1px;background:var(--border);margin:.8rem 0;'></div>", unsafe_allow_html=True)
 
-    # ── Graph stats ──
-    stats = st.session_state.graph_stats or {}
-    if stats:
-        st.markdown('<p style="color:#6b7280; font-size:.7rem; letter-spacing:.6px; margin-bottom:.5rem;">GRAPH METRICS</p>', unsafe_allow_html=True)
-        col1, col2 = st.columns(2)
-        col1.metric("Nodes", stats.get("total_nodes", 0))
-        col2.metric("Edges", stats.get("total_edges", 0))
-        st.markdown(f"""
-        <div style="margin-top:.5rem; font-size:.76rem; color:#6b7280; line-height:2;">
-          <div>Directed: <span style="color:#00e5ff;">{'Yes' if stats.get('is_directed') else 'No'}</span></div>
-          <div>Connected: <span style="color:#{'39ff14' if stats.get('is_connected') else 'ff6b35'};">
-            {'Yes' if stats.get('is_connected') else 'No'}</span></div>
-          <div>Avg In-Degree: <span style="color:#a78bfa;">{stats.get('average_in_degree', 0):.2f}</span></div>
-          <div>Avg Out-Degree: <span style="color:#a78bfa;">{stats.get('average_out_degree', 0):.2f}</span></div>
-        </div>
-        """, unsafe_allow_html=True)
-
-    st.markdown("<hr style='border-color:rgba(0,229,255,.12);'>", unsafe_allow_html=True)
-
-    # ── Fault risk leaderboard ──
-    if st.session_state.graph_loaded and st.session_state.builder:
-        _b = st.session_state.builder
-        _all = _b.get_all_node_ids()
-        risk_scores = {}
-        for _nid in _all:
-            _info = _b.get_node_info(_nid)
-            if _info and _info.get("entity_type") == "EQUIPMENT":
-                _hazards = sum(1 for src, _, d in _b.graph.in_edges(_nid, data=True)
-                               if _b.get_node_info(src) and _b.get_node_info(src).get("entity_type") == "HAZARD")
-                _sensors = sum(1 for src, _, d in _b.graph.in_edges(_nid, data=True)
-                               if _b.get_node_info(src) and _b.get_node_info(src).get("entity_type") == "SENSOR")
-                _has_esd = any(d.get("relation_type") in ("INITIATES", "TRIGGERS")
-                               for _, _, d in _b.graph.out_edges(_nid, data=True))
-                risk_scores[_nid] = _hazards * 40 + _sensors * 15 + (20 if not _has_esd else 0)
-        if risk_scores:
-            st.markdown('<p style="color:#6b7280; font-size:.7rem; letter-spacing:.6px; margin-bottom:.5rem;">⚠️ FAULT RISK LEADERBOARD</p>', unsafe_allow_html=True)
-            for _nid, _score in sorted(risk_scores.items(), key=lambda x: x[1], reverse=True):
-                _color = "#ff6b35" if _score >= 50 else "#f59e0b" if _score >= 20 else "#39ff14"
-                _label = "HIGH" if _score >= 50 else "MED" if _score >= 20 else "LOW"
-                st.markdown(f"""
-                <div style="display:flex; justify-content:space-between; align-items:center;
-                            background:rgba(0,0,0,.25); border-left:3px solid {_color};
-                            border-radius:6px; padding:.35rem .65rem; margin:.2rem 0;
-                            backdrop-filter:blur(4px);">
-                  <span style="color:#e5e7eb; font-size:.75rem; font-family:'JetBrains Mono',monospace;">{_nid}</span>
-                  <span style="color:{_color}; font-size:.68rem; font-weight:700;">{_label}</span>
-                </div>
-                """, unsafe_allow_html=True)
-
-    st.markdown("<hr style='border-color:rgba(0,229,255,.12);'>", unsafe_allow_html=True)
-
-    # ── Activity feed ──
+    # Activity feed
     feed = st.session_state.get("activity_feed", [])
     if feed:
-        st.markdown('<p style="color:#6b7280; font-size:.7rem; letter-spacing:.6px; margin-bottom:.4rem;">◈ LIVE ACTIVITY</p>', unsafe_allow_html=True)
-        for entry in feed[:5]:
+        st.markdown('<div style="font-size:.68rem; color:var(--txt3); letter-spacing:.7px; text-transform:uppercase; margin-bottom:.4rem;">◈ Live Activity</div>', unsafe_allow_html=True)
+        for entry in feed[:6]:
             st.markdown(f"""
-            <div class="activity-entry" style="
-              display:flex; gap:.5rem; align-items:flex-start;
-              padding:.3rem 0; border-bottom:1px solid rgba(0,229,255,.05);">
-              <span style="color:#00e5ff; font-size:.8rem; flex-shrink:0;">{entry['icon']}</span>
+            <div style="display:flex; gap:.5rem; padding:.35rem 0;
+              border-bottom:1px solid rgba(255,255,255,.04);">
+              <span style="font-size:.8rem; color:var(--cyan); flex-shrink:0;">{entry['icon']}</span>
               <div style="min-width:0;">
-                <div style="color:#e5e7eb; font-size:.75rem; font-weight:500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{entry['action']}</div>
-                <div style="color:#6b7280; font-size:.68rem;">{entry['ts']} · {entry.get('detail','')[:30]}</div>
+                <div style="font-size:.73rem; color:var(--txt2); white-space:nowrap;
+                  overflow:hidden; text-overflow:ellipsis;">{entry['action']}</div>
+                <div style="font-size:.65rem; color:var(--txt3);">{entry['ts']}</div>
               </div>
-            </div>
-            """, unsafe_allow_html=True)
+            </div>""", unsafe_allow_html=True)
 
-    st.markdown("<hr style='border-color:rgba(0,229,255,.12);'>", unsafe_allow_html=True)
+    st.markdown("<div style='height:1px;background:var(--border);margin:.8rem 0;'></div>", unsafe_allow_html=True)
 
-    # ── Filter ──
-    st.markdown('<p style="color:#6b7280; font-size:.7rem; letter-spacing:.6px; margin-bottom:.4rem;">FILTER BY TYPE</p>', unsafe_allow_html=True)
-    filter_type = st.selectbox("Filter by entity type", ["ALL", "EQUIPMENT", "SENSOR", "PROCEDURE", "HAZARD", "COMPLIANCE_STANDARD"], label_visibility="collapsed")
+    # Filter
+    st.markdown('<div style="font-size:.68rem; color:var(--txt3); letter-spacing:.7px; text-transform:uppercase; margin-bottom:.4rem;">Filter Nodes</div>', unsafe_allow_html=True)
+    filter_type = st.selectbox("", ["ALL","EQUIPMENT","SENSOR","PROCEDURE","HAZARD","COMPLIANCE_STANDARD"], label_visibility="collapsed")
     st.session_state.filter_type = filter_type
-
-    st.markdown("""
-    <div style="font-size:.7rem; color:#6b7280; line-height:2; margin-top:.8rem;">
-      <b style="color:#9ca3af;">HOW TO USE</b><br>
-      1. Click <em>Initialize Graph Engine</em><br>
-      2. Explore the <em>Knowledge Graph</em> tab<br>
-      3. Click any node to inspect it<br>
-      4. Ask questions in <em>AI Query</em> tab<br>
-      5. Upload docs via <em>Live Document Upload</em>
-    </div>
-    """, unsafe_allow_html=True)
 
 
 # ══════════════════════════════════════════════════════════════════════════════
 # MAIN CONTENT
 # ══════════════════════════════════════════════════════════════════════════════
-hero_banner(st.session_state.graph_stats or {})
+render_hero(st.session_state.graph_stats or {})
 
 if not st.session_state.graph_loaded:
     st.markdown("""
-    <div style="
-      background: rgba(15,15,26,0.6);
-      backdrop-filter: blur(20px);
-      border: 1px dashed rgba(0,229,255,.2);
-      border-radius: 20px;
-      padding: 4rem 2rem;
-      text-align: center;
-      margin-top: 1rem;
+    <div class="fade-up" style="
+      text-align:center; padding:5rem 2rem;
+      background:rgba(255,255,255,.02); border:1px solid var(--border);
+      border-radius:24px; margin-top:.5rem;
+      backdrop-filter:blur(40px);
     ">
-      <div style="font-size:3.5rem; margin-bottom:1rem;
-                  filter:drop-shadow(0 0 20px rgba(0,229,255,.4));">🔌</div>
-      <h2 style="color:#f0f0f8; margin:0 0 .6rem; font-size:1.5rem;">Graph Engine Not Loaded</h2>
-      <p style="color:#6b7280; font-size:.9rem; max-width:440px; margin:.3rem auto 0; line-height:1.6;">
-        Click <strong style="color:#00e5ff;">⚡ Initialize Graph Engine</strong> in the
-        sidebar to parse the data contract and build the knowledge graph.
+      <div style="font-size:4rem; margin-bottom:1rem; opacity:.6; filter:grayscale(1);">🧠</div>
+      <h2 style="color:var(--txt); margin:0 0 .6rem; font-weight:600; font-size:1.4rem;">
+        Graph Engine Not Loaded
+      </h2>
+      <p style="color:var(--txt3); font-size:.88rem; max-width:360px; margin:0 auto; line-height:1.6;">
+        Hit <strong style="color:var(--cyan);">⚡ Initialize Graph Engine</strong> in the sidebar to
+        build the knowledge graph from your data contract.
       </p>
     </div>
     """, unsafe_allow_html=True)
     st.stop()
 
-# ── Tabs ──────────────────────────────────────────────────────────────────────
-builder: GraphRAGBuilder = st.session_state.builder
-engine: GraphSearchEngine = st.session_state.engine
+builder: GraphRAGBuilder    = st.session_state.builder
+engine:  GraphSearchEngine  = st.session_state.engine
 
+# ── Tabs ──────────────────────────────────────────────────────────────────────
 tab_graph, tab_query, tab_explorer, tab_risk, tab_contract = st.tabs([
-    "📊  Knowledge Graph",
-    "🤖  AI Query Interface",
-    "🔍  Node Explorer",
-    "⚠️  Risk Analysis",
-    "📋  Data Contract",
+    "  📊  Graph  ",
+    "  🤖  AI Chat  ",
+    "  🔍  Explorer  ",
+    "  ⚠️  Risk  ",
+    "  📋  Contract  ",
 ])
 
 
 # ══════════════════════════════════════════════════════════════════════════════
-# TAB 1 — Knowledge Graph
+# TAB 1  —  Knowledge Graph
 # ══════════════════════════════════════════════════════════════════════════════
 with tab_graph:
-    section_header("📊", "Live Knowledge Graph", "Interactive directed graph — click any node to inspect it")
+    st.markdown("""
+    <div style="display:flex; align-items:center; gap:.6rem; margin-bottom:1rem;">
+      <span style="font-size:1.1rem;">📊</span>
+      <div>
+        <div style="font-size:1rem; font-weight:600; color:var(--txt);">Live Knowledge Graph</div>
+        <div style="font-size:.76rem; color:var(--txt3);">Click any node to inspect · Drag to explore</div>
+      </div>
+    </div>""", unsafe_allow_html=True)
 
     try:
         from pyvis.network import Network
@@ -790,307 +728,315 @@ with tab_graph:
         ft = st.session_state.filter_type
         all_ids = builder.get_all_node_ids()
 
-        net = Network(height="610px", width="100%", bgcolor="#080810", font_color="#e5e7eb", directed=True)
-        net.set_options("""
-        {
+        net = Network(height="600px", width="100%", bgcolor="#050508", font_color="#ffffff", directed=True)
+        net.set_options("""{
           "nodes": {
-            "shape": "dot",
-            "size": 22,
-            "font": { "size": 13, "face": "JetBrains Mono", "color": "#e5e7eb" },
-            "borderWidth": 2,
-            "borderWidthSelected": 4,
-            "shadow": { "enabled": true, "size": 16, "color": "rgba(0,229,255,.35)" }
+            "shape": "dot", "size": 22,
+            "font": { "size": 12, "face": "JetBrains Mono", "color": "rgba(255,255,255,.85)" },
+            "borderWidth": 1.5, "borderWidthSelected": 3,
+            "shadow": { "enabled": true, "size": 18 }
           },
           "edges": {
-            "arrows": { "to": { "enabled": true, "scaleFactor": 0.65 } },
-            "color": { "color": "#00e5ff", "opacity": 0.45, "highlight": "#00e5ff" },
-            "font": { "size": 10, "color": "#6b7280", "strokeWidth": 0, "face": "Inter" },
-            "width": 1.4,
-            "smooth": { "type": "curvedCW", "roundness": 0.22 },
-            "shadow": { "enabled": true, "color": "rgba(0,229,255,.15)", "size": 8 }
+            "arrows": { "to": { "enabled": true, "scaleFactor": 0.6 } },
+            "color": { "color": "rgba(255,255,255,.18)", "highlight": "#22d3ee", "opacity": 1 },
+            "font": { "size": 9, "color": "rgba(255,255,255,.35)", "strokeWidth": 0, "face": "Inter" },
+            "width": 1.2,
+            "smooth": { "type": "curvedCW", "roundness": 0.2 },
+            "shadow": { "enabled": true, "color": "rgba(34,211,238,.15)", "size": 6 }
           },
           "physics": {
             "enabled": true,
-            "barnesHut": {
-              "gravitationalConstant": -9000,
-              "centralGravity": 0.3,
-              "springLength": 170,
-              "springConstant": 0.035,
-              "damping": 0.09
-            },
+            "barnesHut": { "gravitationalConstant": -9500, "centralGravity": 0.28,
+              "springLength": 175, "springConstant": 0.035, "damping": 0.09 },
             "stabilization": { "iterations": 300 }
           },
-          "interaction": {
-            "hover": true,
-            "tooltipDelay": 100,
-            "navigationButtons": false,
-            "keyboard": true,
-            "multiselect": false,
-            "zoomView": true
-          },
-          "background": { "color": "#080810" }
-        }
-        """)
+          "interaction": { "hover": true, "tooltipDelay": 80, "keyboard": true, "zoomView": true }
+        }""")
 
-        COLOR_MAP = {
-            "EQUIPMENT":           "#00e5ff",
-            "SENSOR":              "#a78bfa",
-            "PROCEDURE":           "#39ff14",
-            "HAZARD":              "#ff6b35",
-            "COMPLIANCE_STANDARD": "#f59e0b",
-            "UNKNOWN":             "#6b7280",
-        }
+        CMAP = { "EQUIPMENT":"#22d3ee","SENSOR":"#818cf8","PROCEDURE":"#34d399",
+                 "HAZARD":"#fb7185","COMPLIANCE_STANDARD":"#fbbf24","UNKNOWN":"#6b7280" }
 
-        for node_id in all_ids:
-            info  = builder.get_node_info(node_id)
-            etype = info.get("entity_type", "UNKNOWN") if info else "UNKNOWN"
-            desc  = info.get("description", "") if info else ""
-            if ft != "ALL" and etype != ft:
-                continue
-            color = COLOR_MAP.get(etype, "#6b7280")
-            size  = 30 if etype == "EQUIPMENT" else 22 if etype == "SENSOR" else 20
-            title = f"<b style='color:{color}'>{node_id}</b><br><em style='color:#6b7280'>{etype}</em><br><span style='color:#9ca3af;font-size:12px'>{desc}</span>"
-            net.add_node(node_id, label=node_id, color={"background": color, "border": color, "highlight": {"background": color, "border": "#ffffff"}}, size=size, title=title)
+        for nid in all_ids:
+            info  = builder.get_node_info(nid)
+            etype = info.get("entity_type","UNKNOWN") if info else "UNKNOWN"
+            desc  = info.get("description","") if info else ""
+            if ft != "ALL" and etype != ft: continue
+            c    = CMAP.get(etype,"#6b7280")
+            size = 28 if etype=="EQUIPMENT" else 22 if etype in ("SENSOR","HAZARD") else 18
+            net.add_node(nid, label=nid, size=size, title=f"<b style='color:{c}'>{nid}</b><br><em style='color:#8888aa'>{etype}</em><br>{desc}",
+                         color={"background":c,"border":c,"highlight":{"background":c,"border":"#ffffff"}})
 
-        added_nodes = set(net.get_nodes())
-        for u, v, data in builder.graph.edges(data=True):
-            if u not in added_nodes or v not in added_nodes:
-                continue
-            rtype = data.get("relation_type", "")
-            ctx   = data.get("context", "")
-            net.add_edge(u, v, label=rtype, title=ctx)
+        added = set(net.get_nodes())
+        for u,v,data in builder.graph.edges(data=True):
+            if u not in added or v not in added: continue
+            net.add_edge(u,v, label=data.get("relation_type",""), title=data.get("context",""))
 
-        # Inject dark background + click bridge
-        html_path = "/tmp/graph_viz.html"
+        html_path = "/tmp/kg_viz.html"
         net.save_graph(html_path)
         with open(html_path, "r", encoding="utf-8") as f:
-            html_content = f.read()
+            html = f.read()
 
-        # Force dark bg + click bridge
-        dark_and_click = """
+        # Dark background + click bridge
+        inject = """
 <style>
-  body, html { background: #080810 !important; margin: 0; padding: 0; }
-  #mynetwork { background: #080810 !important; border: none !important; }
-  canvas { background: #080810 !important; }
+  html,body{background:#050508!important;margin:0;padding:0;}
+  #mynetwork{background:#050508!important;border:none!important;}
+  canvas{background:#050508!important;}
 </style>
 <script>
-function attachClickBridge() {
-  if (typeof network !== 'undefined') {
-    network.on("click", function(params) {
-      if (params.nodes.length > 0) {
-        var nodeId = params.nodes[0];
-        network.selectNodes([nodeId]);
-        network.setSelection({nodes: [nodeId]}, {highlightEdges: true});
-        try { window.parent.sessionStorage.setItem('__pyvis_clicked__', nodeId); } catch(e) {}
+function bridge(){
+  if(typeof network!=='undefined'){
+    network.on("click",function(p){
+      if(p.nodes.length){
+        var id=p.nodes[0];
+        network.selectNodes([id]);
+        try{window.parent.sessionStorage.setItem('__pyvis_clicked__',id);}catch(e){}
       }
     });
-    network.on("hoverNode", function() { document.body.style.cursor = 'pointer'; });
-    network.on("blurNode",  function() { document.body.style.cursor = 'default'; });
-    // After stabilisation, disable physics for performance
-    network.once("stabilizationIterationsDone", function() {
-      network.setOptions({ physics: { enabled: false } });
-    });
-  } else {
-    setTimeout(attachClickBridge, 200);
-  }
+    network.on("hoverNode",function(){document.body.style.cursor='pointer';});
+    network.on("blurNode",function(){document.body.style.cursor='default';});
+    network.once("stabilizationIterationsDone",function(){network.setOptions({physics:{enabled:false}});});
+  } else { setTimeout(bridge,200); }
 }
-attachClickBridge();
-</script>
-"""
-        html_content = html_content.replace("</body>", dark_and_click + "</body>")
-        components.html(html_content, height=620, scrolling=False)
+bridge();
+</script>"""
+        html = html.replace("</body>", inject + "</body>")
+        components.html(html, height=615, scrolling=False)
 
-        # Polling bridge (0-height, invisible)
-        components.html("""
-<script>
+        # Polling bridge
+        components.html("""<script>
 (function(){
   function poll(){
-    try {
-      var nodeId = window.parent.sessionStorage.getItem('__pyvis_clicked__');
-      if (nodeId) {
+    try{
+      var id=window.parent.sessionStorage.getItem('__pyvis_clicked__');
+      if(id){
         window.parent.sessionStorage.removeItem('__pyvis_clicked__');
-        var url = new URL(window.parent.location.href);
-        url.searchParams.set('node', nodeId);
-        window.parent.location.href = url.toString();
+        var url=new URL(window.parent.location.href);
+        url.searchParams.set('node',id);
+        window.parent.location.href=url.toString();
       }
-    } catch(e) {}
+    }catch(e){}
   }
-  setInterval(poll, 250);
+  setInterval(poll,250);
 })();
-</script>
-""", height=0, scrolling=False)
+</script>""", height=0, scrolling=False)
 
-        # Enhanced legend
+        # Legend
         st.markdown("""
-        <div style="display:flex; gap:1rem; flex-wrap:wrap; margin-top:.7rem;
-                    background:rgba(15,15,26,.7); backdrop-filter:blur(8px);
-                    border:1px solid rgba(0,229,255,.08); border-radius:10px;
-                    padding:.6rem 1rem;">
-          <span style="font-size:.76rem; color:#00e5ff;">● EQUIPMENT</span>
-          <span style="font-size:.76rem; color:#a78bfa;">● SENSOR</span>
-          <span style="font-size:.76rem; color:#39ff14;">● PROCEDURE</span>
-          <span style="font-size:.76rem; color:#ff6b35;">● HAZARD</span>
-          <span style="font-size:.76rem; color:#f59e0b;">● COMPLIANCE</span>
-          <span style="font-size:.73rem; color:#6b7280; margin-left:auto;">
-            Drag · Scroll to zoom · Click to inspect
-          </span>
-        </div>
-        """, unsafe_allow_html=True)
+        <div style="display:flex; gap:.8rem; flex-wrap:wrap; margin-top:.6rem;
+          padding:.6rem 1rem; background:rgba(255,255,255,.02);
+          border:1px solid var(--border); border-radius:12px;">
+          <span style="font-size:.74rem; color:#22d3ee;">● Equipment</span>
+          <span style="font-size:.74rem; color:#818cf8;">● Sensor</span>
+          <span style="font-size:.74rem; color:#34d399;">● Procedure</span>
+          <span style="font-size:.74rem; color:#fb7185;">● Hazard</span>
+          <span style="font-size:.74rem; color:#fbbf24;">● Compliance</span>
+        </div>""", unsafe_allow_html=True)
 
     except ImportError:
         st.warning("⚠️ `pyvis` not installed. Run: `pip install pyvis`")
 
-    # ── Node Inspector ────────────────────────────────────────────────────────
-    st.markdown("<hr style='border-color:rgba(0,229,255,.08); margin:1.4rem 0;'>", unsafe_allow_html=True)
-    section_header("🔎", "Node Inspector", "Click any node in the graph above — or select below")
+    # Node inspector
+    st.markdown("<div style='height:1px;background:var(--border);margin:1.5rem 0;'></div>", unsafe_allow_html=True)
+    st.markdown("""
+    <div style="display:flex; align-items:center; gap:.6rem; margin-bottom:.8rem;">
+      <span style="font-size:1rem;">🔎</span>
+      <div style="font-size:.95rem; font-weight:600; color:var(--txt);">Node Inspector</div>
+    </div>""", unsafe_allow_html=True)
 
     all_ids = builder.get_all_node_ids()
-    preselect  = st.session_state.get("selected_node", "")
-    opts       = ["— choose a node —"] + all_ids
+    preselect = st.session_state.get("selected_node","")
+    opts = ["— choose a node —"] + all_ids
     default_idx = opts.index(preselect) if preselect in all_ids else 0
+    selected = st.selectbox("", opts, index=default_idx, label_visibility="collapsed", key="node_inspector_select")
 
-    selected = st.selectbox("Select node", opts, index=default_idx,
-                            label_visibility="collapsed", key="node_inspector_select")
     if selected and selected != "— choose a node —":
         st.session_state["selected_node"] = selected
-        activity_log(f"Node inspected: {selected}", "", "🔎")
-        with st.spinner("Extracting local context…"):
-            context = builder.extract_local_context(selected)
-        if context:
+        activity_log(f"Inspected: {selected}", "", "🔎")
+        with st.spinner("Fetching context…"):
+            ctx = builder.extract_local_context(selected)
+        if ctx:
             info  = builder.get_node_info(selected)
-            etype = info.get("entity_type", "UNKNOWN") if info else "UNKNOWN"
-            desc  = info.get("description", "") if info else ""
-            in_d  = info.get("in_degree", 0) if info else 0
-            out_d = info.get("out_degree", 0) if info else 0
-            COLOR_MAP2 = {"EQUIPMENT":"#00e5ff","SENSOR":"#a78bfa","PROCEDURE":"#39ff14",
-                          "HAZARD":"#ff6b35","COMPLIANCE_STANDARD":"#f59e0b"}
-            nc = COLOR_MAP2.get(etype, "#6b7280")
-
-            col_a, col_b, col_c = st.columns(3)
-            col_a.metric("Entity Type", etype)
-            col_b.metric("Incoming Links", in_d)
-            col_c.metric("Outgoing Links", out_d)
-
+            etype = info.get("entity_type","UNKNOWN") if info else "UNKNOWN"
+            desc  = info.get("description","") if info else ""
+            in_d  = info.get("in_degree",0) if info else 0
+            out_d = info.get("out_degree",0) if info else 0
+            CMAP2 = {"EQUIPMENT":"#22d3ee","SENSOR":"#818cf8","PROCEDURE":"#34d399",
+                     "HAZARD":"#fb7185","COMPLIANCE_STANDARD":"#fbbf24"}
+            nc = CMAP2.get(etype,"#6b7280")
+            c1,c2,c3 = st.columns(3)
+            c1.metric("Type", etype); c2.metric("In-links",in_d); c3.metric("Out-links",out_d)
             st.markdown(f"""
-            <div style="background:rgba(15,15,26,.8); backdrop-filter:blur(16px);
-                        border:1px solid {nc}28; border-left:3px solid {nc};
-                        border-radius:14px; padding:1rem 1.3rem; margin-top:.9rem;">
-              <p style="color:#6b7280; font-size:.72rem; margin:0 0 .4rem; letter-spacing:.4px;">DESCRIPTION</p>
-              <p style="color:#f0f0f8; font-size:.92rem; margin:0; line-height:1.6;">{desc}</p>
-            </div>
-            """, unsafe_allow_html=True)
-
-            with st.expander("📄 Raw Graph Context (sent to LLM)"):
-                st.code(context, language="text")
+            <div style="background:rgba(255,255,255,.02); border:1px solid {nc}28;
+              border-left:3px solid {nc}; border-radius:14px; padding:1rem 1.3rem; margin:.8rem 0;">
+              <div style="font-size:.68rem; color:var(--txt3); letter-spacing:.6px; margin-bottom:.4rem; text-transform:uppercase;">Description</div>
+              <div style="color:var(--txt); font-size:.9rem; line-height:1.6;">{desc}</div>
+            </div>""", unsafe_allow_html=True)
+            with st.expander("View raw context →"):
+                st.code(ctx, language="text")
         else:
-            st.warning("No context found for this node.")
+            st.info("No context found for this node.")
 
-    # ── Path Finder ───────────────────────────────────────────────────────────
-    st.markdown("<hr style='border-color:rgba(0,229,255,.08); margin:1.4rem 0;'>", unsafe_allow_html=True)
-    section_header("🔗", "Relationship Path Finder", "Trace the shortest connection between any two nodes")
+    # Path finder
+    st.markdown("<div style='height:1px;background:var(--border);margin:1.5rem 0;'></div>", unsafe_allow_html=True)
+    st.markdown("""
+    <div style="display:flex; align-items:center; gap:.6rem; margin-bottom:.8rem;">
+      <span style="font-size:1rem;">🔗</span>
+      <div style="font-size:.95rem; font-weight:600; color:var(--txt);">Relationship Path Finder</div>
+    </div>""", unsafe_allow_html=True)
 
-    if engine is not None:
-        all_ids_pf = builder.get_all_node_ids()
-        pf_col1, pf_col2 = st.columns(2)
-        src_node = pf_col1.selectbox("From node", ["— select source —"] + all_ids_pf, key="pf_src")
-        tgt_node = pf_col2.selectbox("To node",   ["— select target —"] + all_ids_pf, key="pf_tgt")
-
-        if st.button("🔍  Find Path", key="find_path_btn"):
-            if src_node.startswith("—") or tgt_node.startswith("—"):
-                st.warning("Please select both a source and a target node.")
-            elif src_node == tgt_node:
-                st.info("Source and target are the same node.")
+    if engine:
+        pf1, pf2 = st.columns(2)
+        src = pf1.selectbox("From", ["— source —"]+builder.get_all_node_ids(), key="pf_src")
+        tgt = pf2.selectbox("To",   ["— target —"]+builder.get_all_node_ids(), key="pf_tgt")
+        if st.button("Find Path →", key="find_path_btn"):
+            if src.startswith("—") or tgt.startswith("—"): st.warning("Select both nodes.")
+            elif src == tgt: st.info("Same node.")
             else:
-                with st.spinner("Tracing relationship path…"):
-                    path = engine.find_path(src_node, tgt_node)
+                with st.spinner("Tracing path…"):
+                    path = engine.find_path(src, tgt)
                 if path:
-                    path_ctx = engine.format_path_as_context(path)
-                    activity_log(f"Path found: {src_node} → {tgt_node}", f"{len(path)-1} hops", "🔗")
-                    st.success(f"✅ Path found! {len(path)-1} hop(s)")
-                    hop_html = ""
-                    COLOR_MAP_PF = {"EQUIPMENT":"#00e5ff","SENSOR":"#a78bfa","PROCEDURE":"#39ff14",
-                                    "HAZARD":"#ff6b35","COMPLIANCE_STANDARD":"#f59e0b"}
+                    activity_log(f"Path: {src}→{tgt}", f"{len(path)-1} hops","🔗")
+                    st.success(f"✓ {len(path)-1} hop(s) found")
+                    CMAP3 = {"EQUIPMENT":"#22d3ee","SENSOR":"#818cf8","PROCEDURE":"#34d399",
+                             "HAZARD":"#fb7185","COMPLIANCE_STANDARD":"#fbbf24"}
+                    hops = ""
                     for i, nid in enumerate(path):
                         inf = builder.get_node_info(nid)
-                        et  = inf.get("entity_type","UNKNOWN") if inf else "UNKNOWN"
-                        c   = COLOR_MAP_PF.get(et, "#6b7280")
-                        hop_html += f"""<span class='hop-node' style='
-                          background:rgba(0,0,0,.35); backdrop-filter:blur(6px);
-                          border:1px solid {c}55; border-radius:10px;
-                          padding:.4rem .85rem; color:{c};
-                          font-family:"JetBrains Mono",monospace; font-size:.85rem;
-                          box-shadow:0 0 10px {c}22;'>{nid}</span>"""
+                        c   = CMAP3.get(inf.get("entity_type","") if inf else "","#6b7280")
+                        hops += f"""<span style="
+                          background:rgba(255,255,255,.04); border:1px solid {c}44;
+                          border-radius:10px; padding:.35rem .8rem;
+                          color:{c}; font-family:'JetBrains Mono',monospace; font-size:.82rem;">
+                          {nid}</span>"""
                         if i < len(path)-1:
-                            edge_d = builder.graph.get_edge_data(path[i], path[i+1]) or {}
-                            rel    = edge_d.get("relation_type", "→")
-                            hop_html += f"<span style='color:#6b7280; margin:0 .5rem; font-size:.78rem;'>──[{rel}]──▶</span>"
-                    st.markdown(f"<div style='display:flex; flex-wrap:wrap; gap:.5rem; align-items:center; margin:.9rem 0;'>{hop_html}</div>", unsafe_allow_html=True)
-                    with st.expander("📄 Full path context (sent to LLM)"):
-                        st.code(path_ctx, language="text")
+                            rel = (builder.graph.get_edge_data(path[i],path[i+1]) or {}).get("relation_type","→")
+                            hops += f"<span style='color:var(--txt3); margin:0 .4rem; font-size:.75rem;'>──[{rel}]──▶</span>"
+                    st.markdown(f"<div style='display:flex;flex-wrap:wrap;gap:.4rem;align-items:center;margin:.8rem 0;'>{hops}</div>", unsafe_allow_html=True)
+                    with st.expander("Full path context"):
+                        st.code(engine.format_path_as_context(path), language="text")
                 else:
-                    st.error(f"❌ No path found between **{src_node}** and **{tgt_node}**.")
-    else:
-        st.info("Load the graph engine first to use the path finder.")
+                    st.error(f"No path found between {src} and {tgt}.")
 
 
 # ══════════════════════════════════════════════════════════════════════════════
-# TAB 2 — AI Query Interface (streaming LLM response)
+# TAB 2  —  AI Chat  (ChatGPT-style)
 # ══════════════════════════════════════════════════════════════════════════════
 with tab_query:
-    section_header("🤖", "AI Query Interface", "Ask the knowledge graph anything in natural language")
-
     if engine is None:
-        st.error("Search engine not available. Ensure graph is loaded.")
+        st.error("Search engine unavailable. Ensure graph is loaded.")
     else:
         # Dynamic quick queries
-        st.markdown('<p style="color:#6b7280; font-size:.78rem; margin-bottom:.5rem; letter-spacing:.3px;">QUICK QUERIES</p>', unsafe_allow_html=True)
-        all_equip   = [n for n in builder.get_all_node_ids() if builder.get_node_info(n) and builder.get_node_info(n).get("entity_type") == "EQUIPMENT"]
-        all_hazards = [n for n in builder.get_all_node_ids() if builder.get_node_info(n) and builder.get_node_info(n).get("entity_type") == "HAZARD"]
-        all_sensors = [n for n in builder.get_all_node_ids() if builder.get_node_info(n) and builder.get_node_info(n).get("entity_type") == "SENSOR"]
-        sample_queries = []
-        if all_equip:   sample_queries.append(f"What does {all_equip[0]} connect to?")
-        if all_hazards: sample_queries.append(f"How do we mitigate {all_hazards[0]}?")
-        if all_sensors: sample_queries.append(f"What does {all_sensors[0]} monitor?")
-        general_qs = ["What hazards exist in the plant?", "What safety standards govern operations?", "Describe the emergency shutdown procedure."]
-        sample_queries.extend(general_qs[:max(0, 5 - len(sample_queries))])
+        all_equip   = [n for n in builder.get_all_node_ids() if builder.get_node_info(n) and builder.get_node_info(n).get("entity_type")=="EQUIPMENT"]
+        all_hazards = [n for n in builder.get_all_node_ids() if builder.get_node_info(n) and builder.get_node_info(n).get("entity_type")=="HAZARD"]
+        all_sensors = [n for n in builder.get_all_node_ids() if builder.get_node_info(n) and builder.get_node_info(n).get("entity_type")=="SENSOR"]
+        qs = []
+        if all_equip:   qs.append(f"What does {all_equip[0]} connect to?")
+        if all_hazards: qs.append(f"How do we mitigate {all_hazards[0]}?")
+        if all_sensors: qs.append(f"What does {all_sensors[0]} monitor?")
+        qs += ["What hazards exist in the plant?","What safety standards govern operations?"]
+        qs = qs[:5]
 
-        cols = st.columns(len(sample_queries))
-        for i, q in enumerate(sample_queries):
-            label = f"💬 {q[:20]}…" if len(q) > 20 else f"💬 {q}"
-            if cols[i].button(label, key=f"sample_{i}", use_container_width=True):
-                st.session_state["prefill_query"] = q
-
-        st.markdown("<div style='height:.6rem'></div>", unsafe_allow_html=True)
-
-        # Chat history
+        # Empty state
         if not st.session_state.chat_history:
-            st.markdown("""
-            <div style="text-align:center; padding:3rem 1rem;
-                        background:rgba(15,15,26,.5); backdrop-filter:blur(12px);
-                        border:1px solid rgba(0,229,255,.08); border-radius:16px;">
-              <div style="font-size:3rem; margin-bottom:.7rem; opacity:.6;">💬</div>
-              <p style="font-size:.9rem; color:#6b7280;">
-                Ask your first question to begin exploring the knowledge graph.
+            orb_html = siri_orb("idle", size=80)
+            st.markdown(f"""
+            <div class="fade-up" style="text-align:center; padding:3rem 1rem 2rem;">
+              <div style="margin-bottom:1.2rem;">{orb_html}</div>
+              <h2 style="color:var(--txt); font-weight:700; font-size:1.4rem; margin:0 0 .4rem;">
+                How can I help?
+              </h2>
+              <p style="color:var(--txt3); font-size:.88rem; max-width:340px; margin:0 auto;">
+                Ask anything about your industrial knowledge graph. I'll search through entities and relationships instantly.
               </p>
-            </div>
-            """, unsafe_allow_html=True)
-        for msg in st.session_state.chat_history:
-            chat_bubble(msg["role"], msg["content"], msg.get("time", ""))
+            </div>""", unsafe_allow_html=True)
 
-        st.markdown("<hr style='border-color:rgba(0,229,255,.08);'>", unsafe_allow_html=True)
+            # Quick query chips
+            st.markdown('<div style="display:flex; flex-wrap:wrap; gap:.5rem; justify-content:center; margin-bottom:1.5rem;">', unsafe_allow_html=True)
+            cols = st.columns(len(qs))
+            for i, q in enumerate(qs):
+                label = q[:28]+"…" if len(q)>28 else q
+                if cols[i].button(label, key=f"qs_{i}", use_container_width=True):
+                    st.session_state["prefill_query"] = q
+            st.markdown('</div>', unsafe_allow_html=True)
+        else:
+            # Show quick query row at top
+            qcols = st.columns(len(qs))
+            for i,q in enumerate(qs):
+                label = q[:22]+"…" if len(q)>22 else q
+                if qcols[i].button(label, key=f"qs_{i}", use_container_width=True):
+                    st.session_state["prefill_query"] = q
 
-        # Query form
-        prefill = st.session_state.pop("prefill_query", "")
-        with st.form(key="query_form", clear_on_submit=True):
+            st.markdown("<div style='height:.4rem'></div>", unsafe_allow_html=True)
+
+            # Chat messages — ChatGPT style
+            for msg in st.session_state.chat_history:
+                if msg["role"] == "user":
+                    st.markdown(f"""
+                    <div class="msg-user" style="
+                      display:flex; justify-content:flex-end; margin:.7rem 0; gap:.6rem;
+                    ">
+                      <div style="
+                        max-width:72%; background:rgba(255,255,255,.07);
+                        border:1px solid rgba(255,255,255,.1);
+                        border-radius:20px 20px 6px 20px;
+                        padding:.85rem 1.1rem;
+                        backdrop-filter:blur(20px);
+                      ">
+                        <p style="margin:0; color:var(--txt); font-size:.9rem; line-height:1.55;">{msg['content']}</p>
+                        <span style="font-size:.65rem; color:var(--txt3); margin-top:.3rem; display:block;">{msg.get('time','')}</span>
+                      </div>
+                      <div style="
+                        width:34px; height:34px; border-radius:50%; flex-shrink:0;
+                        background:rgba(34,211,238,.12); border:1px solid rgba(34,211,238,.25);
+                        display:flex; align-items:center; justify-content:center; font-size:.95rem;
+                      ">👤</div>
+                    </div>""", unsafe_allow_html=True)
+                else:
+                    st.markdown(f"""
+                    <div class="msg-ai" style="
+                      display:flex; justify-content:flex-start; margin:.7rem 0; gap:.6rem;
+                    ">
+                      <div style="
+                        width:34px; height:34px; border-radius:50%; flex-shrink:0;
+                        background:linear-gradient(135deg,rgba(34,211,238,.2),rgba(129,140,248,.2));
+                        border:1px solid rgba(34,211,238,.2);
+                        display:flex; align-items:center; justify-content:center; font-size:.95rem;
+                        box-shadow:0 0 12px rgba(34,211,238,.15);
+                      ">🧠</div>
+                      <div style="
+                        max-width:76%; background:rgba(255,255,255,.03);
+                        border:1px solid var(--border);
+                        border-radius:6px 20px 20px 20px;
+                        padding:.85rem 1.1rem;
+                        backdrop-filter:blur(20px);
+                      ">
+                        <p style="margin:0; color:var(--txt); font-size:.9rem; line-height:1.7; white-space:pre-wrap;">{msg['content']}</p>
+                        <span style="font-size:.65rem; color:var(--txt3); margin-top:.3rem; display:block;">{msg.get('time','')}</span>
+                      </div>
+                    </div>""", unsafe_allow_html=True)
+
+            # Show context if present
+            if st.session_state.chat_history:
+                last = st.session_state.chat_history[-1]
+                if last.get("role")=="assistant" and last.get("context"):
+                    with st.expander("View retrieved graph context →"):
+                        st.code(last["context"], language="text")
+
+        st.markdown("<div style='height:.8rem'></div>", unsafe_allow_html=True)
+
+        # Input area — floating bottom style
+        prefill = st.session_state.pop("prefill_query","")
+        with st.form(key="chat_form", clear_on_submit=True):
             user_input = st.text_input(
-                "Your query", value=prefill,
-                placeholder="e.g. What are the risk factors for PUMP-101A?",
+                "", value=prefill,
+                placeholder="Ask anything about your industrial graph…",
                 label_visibility="collapsed",
             )
-            col_submit, col_clear, col_depth = st.columns([3, 1, 2])
-            submit = col_submit.form_submit_button("⚡  Ask AI", use_container_width=True)
-            clear  = col_clear.form_submit_button("🗑️",         use_container_width=True)
-            depth  = col_depth.selectbox("Depth", [1, 2, 3], index=0, label_visibility="collapsed")
+            c_sub, c_clr, c_dep = st.columns([4,1,2])
+            submit = c_sub.form_submit_button("Send  ⚡", use_container_width=True)
+            clear  = c_clr.form_submit_button("Clear", use_container_width=True)
+            depth  = c_dep.selectbox("Depth", [1,2,3], index=0, label_visibility="collapsed")
 
         if clear:
             st.session_state.chat_history = []
@@ -1098,173 +1044,202 @@ with tab_query:
 
         if submit and user_input.strip():
             ts = time.strftime("%H:%M")
-            st.session_state.chat_history.append({"role": "user", "content": user_input, "time": ts})
-            activity_log(f"Query: {user_input[:40]}", "", "🤖")
-
-            # Streaming response with typing effect
-            with st.spinner("Searching graph + querying Llama 3.2…"):
+            st.session_state.chat_history.append({"role":"user","content":user_input,"time":ts})
+            activity_log(f"Query: {user_input[:38]}","","🤖")
+            with st.spinner("Thinking…"):
                 try:
                     ctx, answer = engine.query(user_input, top_k=5, context_depth=int(depth))
                     st.session_state.chat_history.append({
-                        "role": "assistant", "content": answer,
-                        "time": time.strftime("%H:%M"), "context": ctx,
+                        "role":"assistant","content":answer,
+                        "time":time.strftime("%H:%M"),"context":ctx
                     })
-                except Exception as e:
+                except Exception as ex:
                     st.session_state.chat_history.append({
-                        "role": "assistant",
-                        "content": f"⚠️ Error: {e}\n\nEnsure Ollama is running and `llama3.2` is pulled (`ollama pull llama3.2`).",
-                        "time": time.strftime("%H:%M"),
+                        "role":"assistant",
+                        "content":f"⚠️ {ex}\n\nEnsure Ollama is running: `ollama pull llama3.2`",
+                        "time":time.strftime("%H:%M")
                     })
             st.rerun()
 
-        if st.session_state.chat_history:
-            last = st.session_state.chat_history[-1]
-            if last.get("role") == "assistant" and last.get("context"):
-                with st.expander("🔎 View retrieved graph context"):
-                    st.code(last["context"], language="text")
-
 
 # ══════════════════════════════════════════════════════════════════════════════
-# TAB 3 — Node Explorer
+# TAB 3  —  Node Explorer
 # ══════════════════════════════════════════════════════════════════════════════
 with tab_explorer:
-    section_header("🔍", "Entity Explorer", "Browse and search all nodes in the knowledge graph")
+    st.markdown("""
+    <div style="display:flex; align-items:center; gap:.6rem; margin-bottom:.8rem;">
+      <span>🔍</span>
+      <div style="font-size:.95rem; font-weight:600; color:var(--txt);">Entity Explorer</div>
+    </div>""", unsafe_allow_html=True)
 
     ft      = st.session_state.filter_type
     all_ids = builder.get_all_node_ids()
-    search_term = st.text_input("Search nodes", placeholder="Type a keyword or node ID…", label_visibility="collapsed")
+    search  = st.text_input("", placeholder="Search by node ID or keyword…", label_visibility="collapsed")
+
+    CMAP_EX = {"EQUIPMENT":"#22d3ee","SENSOR":"#818cf8","PROCEDURE":"#34d399",
+               "HAZARD":"#fb7185","COMPLIANCE_STANDARD":"#fbbf24"}
 
     filtered = []
-    for node_id in all_ids:
-        info  = builder.get_node_info(node_id)
-        etype = info.get("entity_type", "UNKNOWN") if info else "UNKNOWN"
-        desc  = info.get("description", "") if info else ""
-        if ft != "ALL" and etype != ft: continue
-        if search_term and search_term.lower() not in node_id.lower() and search_term.lower() not in desc.lower(): continue
-        filtered.append((node_id, etype, desc, info))
+    for nid in all_ids:
+        info  = builder.get_node_info(nid)
+        etype = info.get("entity_type","UNKNOWN") if info else "UNKNOWN"
+        desc  = info.get("description","") if info else ""
+        if ft!="ALL" and etype!=ft: continue
+        if search and search.lower() not in nid.lower() and search.lower() not in desc.lower(): continue
+        filtered.append((nid,etype,desc))
 
     if not filtered:
-        st.info("No nodes match your filter/search.")
+        st.info("No nodes match.")
     else:
-        st.markdown(f'<p style="color:#6b7280; font-size:.78rem; margin-bottom:.6rem;"><b style="color:#f0f0f8;">{len(filtered)}</b> entity/entities found</p>', unsafe_allow_html=True)
-        for node_id, etype, desc, info in filtered:
-            node_badge(node_id, etype, desc)
+        st.markdown(f'<p style="font-size:.76rem; color:var(--txt3); margin-bottom:.6rem;"><b style="color:var(--txt);">{len(filtered)}</b> entities found</p>', unsafe_allow_html=True)
+        for nid,etype,desc in filtered:
+            c = CMAP_EX.get(etype,"#6b7280")
+            st.markdown(f"""
+            <div style="
+              background:rgba(255,255,255,.025);
+              border:1px solid rgba(255,255,255,.06);
+              border-left:3px solid {c};
+              border-radius:12px; padding:.75rem 1rem; margin:.3rem 0;
+              transition:border-color .2s;
+            " onmouseover="this.style.borderColor='{c}66'"
+               onmouseout="this.style.borderColor='rgba(255,255,255,.06)'">
+              <div style="display:flex; justify-content:space-between; align-items:center;">
+                <span style="color:{c}; font-family:'JetBrains Mono',monospace; font-weight:600; font-size:.88rem;">{nid}</span>
+                <span style="color:{c}; font-size:.66rem; background:{c}14; border:1px solid {c}28;
+                  border-radius:999px; padding:.1rem .6rem; letter-spacing:.4px;">{etype}</span>
+              </div>
+              <p style="color:rgba(255,255,255,.45); font-size:.78rem; margin:.25rem 0 0; line-height:1.4;">{desc}</p>
+            </div>""", unsafe_allow_html=True)
 
-        st.markdown("<hr style='border-color:rgba(0,229,255,.08); margin:1rem 0;'>", unsafe_allow_html=True)
-        section_header("📌", "Relationship Map", "Outgoing and incoming edges for a selected node")
-        pick = st.selectbox("Pick node for relationship map", ["— select —"] + [n for n, *_ in filtered], label_visibility="collapsed")
-        if pick and pick != "— select —":
-            context = builder.extract_local_context(pick)
-            if context:
-                st.code(context, language="text")
+        st.markdown("<div style='height:1px;background:var(--border);margin:1rem 0;'></div>", unsafe_allow_html=True)
+        st.markdown('<div style="font-size:.95rem; font-weight:600; color:var(--txt); margin-bottom:.6rem;">📌 Relationship Map</div>', unsafe_allow_html=True)
+        pick = st.selectbox("", ["— pick a node —"]+[n for n,*_ in filtered], label_visibility="collapsed")
+        if pick and not pick.startswith("—"):
+            ctx = builder.extract_local_context(pick)
+            if ctx: st.code(ctx, language="text")
 
 
 # ══════════════════════════════════════════════════════════════════════════════
-# TAB 4 — Risk Analysis (SVG Gauge Dials)
+# TAB 4  —  Risk Analysis (with SVG gauge dials)
 # ══════════════════════════════════════════════════════════════════════════════
 with tab_risk:
-    section_header("⚠️", "Fault Risk Analysis", "Automated risk scoring for all equipment nodes based on graph topology")
+    st.markdown("""
+    <div style="display:flex; align-items:center; gap:.6rem; margin-bottom:.8rem;">
+      <span>⚠️</span>
+      <div>
+        <div style="font-size:.95rem; font-weight:600; color:var(--txt);">Fault Risk Analysis</div>
+        <div style="font-size:.76rem; color:var(--txt3);">Automated scoring based on graph topology</div>
+      </div>
+    </div>""", unsafe_allow_html=True)
 
-    all_ids_r = builder.get_all_node_ids()
     risk_data = []
-    for nid in all_ids_r:
+    for nid in builder.get_all_node_ids():
         info = builder.get_node_info(nid)
-        if not info or info.get("entity_type") != "EQUIPMENT": continue
-        hazards = [(src, d) for src, _, d in builder.graph.in_edges(nid, data=True)
-                   if builder.get_node_info(src) and builder.get_node_info(src).get("entity_type") == "HAZARD"]
-        sensors = [(src, d) for src, _, d in builder.graph.in_edges(nid, data=True)
-                   if builder.get_node_info(src) and builder.get_node_info(src).get("entity_type") == "SENSOR"]
-        procs   = [(tgt, d) for _, tgt, d in builder.graph.out_edges(nid, data=True)
-                   if builder.get_node_info(tgt) and builder.get_node_info(tgt).get("entity_type") == "PROCEDURE"]
-        has_redundancy = any(d.get("relation_type") == "HAS_REDUNDANCY" for _, _, d in builder.graph.out_edges(nid, data=True))
-        score = len(hazards) * 40 + (max(0, 2 - len(sensors)) * 15) + (0 if procs else 25) + (0 if has_redundancy else 10)
-        risk_data.append({
-            "node_id": nid, "desc": info.get("description", ""),
-            "hazards": len(hazards), "sensors": len(sensors),
-            "procedures": len(procs), "redundancy": has_redundancy, "score": score,
-        })
-    risk_data.sort(key=lambda x: x["score"], reverse=True)
+        if not info or info.get("entity_type")!="EQUIPMENT": continue
+        hazards = [(s,d) for s,_,d in builder.graph.in_edges(nid,data=True)
+                   if builder.get_node_info(s) and builder.get_node_info(s).get("entity_type")=="HAZARD"]
+        sensors = [(s,d) for s,_,d in builder.graph.in_edges(nid,data=True)
+                   if builder.get_node_info(s) and builder.get_node_info(s).get("entity_type")=="SENSOR"]
+        procs   = [(t,d) for _,t,d in builder.graph.out_edges(nid,data=True)
+                   if builder.get_node_info(t) and builder.get_node_info(t).get("entity_type")=="PROCEDURE"]
+        redund  = any(d.get("relation_type")=="HAS_REDUNDANCY" for _,_,d in builder.graph.out_edges(nid,data=True))
+        score   = len(hazards)*40 + (max(0,2-len(sensors))*15) + (0 if procs else 25) + (0 if redund else 10)
+        risk_data.append({"id":nid,"desc":info.get("description",""),"hazards":len(hazards),
+                          "sensors":len(sensors),"procs":len(procs),"redund":redund,"score":score})
+    risk_data.sort(key=lambda x:x["score"],reverse=True)
 
     if not risk_data:
-        st.info("No EQUIPMENT nodes found in the graph.")
+        st.info("No EQUIPMENT nodes in graph.")
     else:
-        st.markdown(f'<p style="color:#6b7280; font-size:.8rem;">Analysed <b style="color:#f0f0f8;">{len(risk_data)}</b> equipment nodes</p>', unsafe_allow_html=True)
-
+        st.markdown(f'<p style="font-size:.78rem; color:var(--txt3); margin-bottom:.8rem;">Analysed <b style="color:var(--txt);">{len(risk_data)}</b> equipment nodes</p>', unsafe_allow_html=True)
         for rd in risk_data:
-            score  = rd["score"]
-            color  = "#ff6b35" if score >= 50 else "#f59e0b" if score >= 20 else "#39ff14"
-            label  = "🔴 HIGH RISK" if score >= 50 else "🟠 MEDIUM RISK" if score >= 20 else "🟢 LOW RISK"
-            gauge  = gauge_svg(min(score, 100), color, size=90)
+            sc    = rd["score"]
+            color = "#fb7185" if sc>=50 else "#fbbf24" if sc>=20 else "#34d399"
+            label = "HIGH" if sc>=50 else "MED" if sc>=20 else "LOW"
+            bar   = min(100, sc)
+            # SVG gauge
+            r,circ = 32, 125
+            off    = circ*(1-min(sc,100)/100)
+            gauge  = f"""
+            <svg width="80" height="50" viewBox="0 0 80 50" style="overflow:visible; flex-shrink:0;">
+              <path d="M 10 45 A 30 30 0 0 1 70 45" fill="none"
+                stroke="rgba(255,255,255,.06)" stroke-width="7" stroke-linecap="round"/>
+              <path d="M 10 45 A 30 30 0 0 1 70 45" fill="none"
+                stroke="{color}" stroke-width="7" stroke-linecap="round"
+                stroke-dasharray="{circ}" stroke-dashoffset="{off:.1f}"
+                style="animation:gauge-fill 1s cubic-bezier(.4,0,.2,1) both;
+                       filter:drop-shadow(0 0 6px {color})"/>
+              <text x="40" y="40" text-anchor="middle" font-size="12" font-weight="700"
+                font-family="JetBrains Mono,monospace" fill="{color}">{sc}</text>
+            </svg>"""
 
             st.markdown(f"""
             <div style="
-              background:rgba(15,15,26,.8); backdrop-filter:blur(16px);
-              border:1px solid {color}22; border-left:4px solid {color};
-              border-radius:16px; padding:1.1rem 1.3rem; margin:.6rem 0;
-              transition: box-shadow .3s;
-            " onmouseover="this.style.boxShadow='0 0 30px {color}22'"
+              background:rgba(255,255,255,.02); border:1px solid rgba(255,255,255,.06);
+              border-left:3px solid {color}; border-radius:16px;
+              padding:1rem 1.2rem; margin:.5rem 0;
+              display:flex; align-items:center; gap:1rem;
+              transition:border-color .2s, box-shadow .2s;
+            " onmouseover="this.style.boxShadow='0 0 30px {color}18'"
                onmouseout="this.style.boxShadow='none'">
-              <div style="display:flex; justify-content:space-between; align-items:center;">
-                <div style="flex:1;">
-                  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:.5rem;">
-                    <span style="color:{color}; font-family:'JetBrains Mono',monospace;
-                                 font-weight:700; font-size:1rem;">{rd['node_id']}</span>
-                    <span style="color:{color}; font-size:.78rem; font-weight:600;">{label}</span>
-                  </div>
-                  <p style="color:#9ca3af; font-size:.8rem; margin:0 0 .7rem; line-height:1.4;">{rd['desc']}</p>
-                  <div style="display:flex; gap:1.5rem; font-size:.76rem; color:#6b7280; flex-wrap:wrap;">
-                    <span>⚡ Hazards: <b style="color:{color};">{rd['hazards']}</b></span>
-                    <span>📡 Sensors: <b style="color:#a78bfa;">{rd['sensors']}</b></span>
-                    <span>📋 ESD Procs: <b style="color:#39ff14;">{rd['procedures']}</b></span>
-                    <span>♻️ Redundancy: <b style="color:#{'39ff14' if rd['redundancy'] else 'ff6b35'};">{'Yes' if rd['redundancy'] else 'No'}</b></span>
-                  </div>
+              <div style="flex:1; min-width:0;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:.4rem;">
+                  <span style="color:{color}; font-family:'JetBrains Mono',monospace; font-weight:700; font-size:.95rem;">{rd['id']}</span>
+                  <span style="color:{color}; font-size:.72rem; font-weight:700; background:{color}14;
+                    border:1px solid {color}28; border-radius:999px; padding:.15rem .65rem;">{label} RISK</span>
                 </div>
-                <!-- SVG Gauge -->
-                <div style="flex-shrink:0; margin-left:1.2rem;">{gauge}</div>
+                <div style="height:3px; background:rgba(255,255,255,.06); border-radius:4px; margin-bottom:.6rem;">
+                  <div style="width:{bar}%; height:3px; background:linear-gradient(90deg,{color}88,{color});
+                    border-radius:4px; box-shadow:0 0 8px {color}66;"></div>
+                </div>
+                <p style="color:rgba(255,255,255,.4); font-size:.78rem; margin:0 0 .5rem; line-height:1.4;">{rd['desc'][:120]}</p>
+                <div style="display:flex; gap:1.2rem; font-size:.74rem; color:rgba(255,255,255,.35); flex-wrap:wrap;">
+                  <span>⚡ Hazards <b style="color:{color};">{rd['hazards']}</b></span>
+                  <span>📡 Sensors <b style="color:#818cf8;">{rd['sensors']}</b></span>
+                  <span>📋 ESD <b style="color:#34d399;">{rd['procs']}</b></span>
+                  <span>♻️ Redundancy <b style="color:{'#34d399' if rd['redund'] else '#fb7185'};">{'Yes' if rd['redund'] else 'No'}</b></span>
+                </div>
               </div>
-            </div>
-            """, unsafe_allow_html=True)
+              {gauge}
+            </div>""", unsafe_allow_html=True)
 
-        st.markdown("<hr style='border-color:rgba(0,229,255,.08); margin:1.2rem 0;'>", unsafe_allow_html=True)
         st.markdown("""
-        <div style="background:rgba(15,15,26,.7); backdrop-filter:blur(12px);
-                    border:1px solid rgba(0,229,255,.08); border-radius:14px; padding:1rem 1.3rem;">
-          <p style="color:#6b7280; font-size:.72rem; margin:0 0 .4rem; letter-spacing:.4px;">SCORING FORMULA</p>
-          <p style="color:#f0f0f8; font-size:.85rem; font-family:'JetBrains Mono',monospace; margin:0;">
-            Score = (Hazards × 40) + (Missing sensors × 15) + (No ESD proc × 25) + (No redundancy × 10)
-          </p>
-        </div>
-        """, unsafe_allow_html=True)
+        <div style="margin-top:1.2rem; background:rgba(255,255,255,.02); border:1px solid var(--border);
+          border-radius:12px; padding:.8rem 1.1rem;">
+          <div style="font-size:.68rem; color:var(--txt3); letter-spacing:.6px; text-transform:uppercase; margin-bottom:.3rem;">Scoring Formula</div>
+          <code style="color:#22d3ee; font-size:.8rem;">Score = (Hazards×40) + (Missing sensors×15) + (No ESD×25) + (No redundancy×10)</code>
+        </div>""", unsafe_allow_html=True)
 
 
 # ══════════════════════════════════════════════════════════════════════════════
-# TAB 5 — Data Contract Viewer
+# TAB 5  —  Data Contract
 # ══════════════════════════════════════════════════════════════════════════════
 with tab_contract:
-    section_header("📋", "Raw Data Contract", f"Source: {GRAPH_JSON}")
+    st.markdown("""
+    <div style="display:flex; align-items:center; gap:.6rem; margin-bottom:.8rem;">
+      <span>📋</span>
+      <div style="font-size:.95rem; font-weight:600; color:var(--txt);">Raw Data Contract</div>
+    </div>""", unsafe_allow_html=True)
     try:
-        with open(GRAPH_JSON, "r", encoding="utf-8") as f:
+        with open(GRAPH_JSON,"r",encoding="utf-8") as f:
             raw = json.load(f)
-        col_a, col_b, col_c = st.columns(3)
-        col_a.metric("Document ID",   raw.get("document_id", "N/A"))
-        col_b.metric("Entities",      len(raw.get("entities", [])))
-        col_c.metric("Relationships", len(raw.get("relationships", [])))
+        c1,c2,c3 = st.columns(3)
+        c1.metric("Document ID",   raw.get("document_id","N/A"))
+        c2.metric("Entities",      len(raw.get("entities",[])))
+        c3.metric("Relationships", len(raw.get("relationships",[])))
         st.markdown("<div style='height:.5rem'></div>", unsafe_allow_html=True)
         st.json(raw)
     except FileNotFoundError:
-        st.error(f"Data contract not found at `{GRAPH_JSON}`.")
-    except Exception as e:
-        st.error(f"Error reading contract: {e}")
+        st.error(f"Contract not found at `{GRAPH_JSON}`.")
+    except Exception as ex:
+        st.error(f"Error: {ex}")
 
 
 # ── Footer ────────────────────────────────────────────────────────────────────
 st.markdown("""
-<div style="
-  text-align:center; padding:1.5rem .5rem .8rem;
-  color:#4b5563; font-size:.72rem; letter-spacing:.4px;
-  border-top:1px solid rgba(0,229,255,.06); margin-top:2.5rem;
-">
+<div style="text-align:center; padding:1.5rem; margin-top:2rem;
+  border-top:1px solid var(--border); font-size:.72rem; color:var(--txt3);">
   AI-HackerZ &nbsp;·&nbsp; ET AI Hackathon 2026 &nbsp;·&nbsp; Problem Statement 8 &nbsp;·&nbsp;
-  <span style="color:#00e5ff;">100% Offline Edge-Computing GraphRAG</span>
+  <span style="color:var(--cyan);">100% Offline · Edge Computing · GraphRAG</span>
 </div>
 """, unsafe_allow_html=True)
