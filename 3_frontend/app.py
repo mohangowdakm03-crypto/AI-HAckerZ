@@ -328,6 +328,40 @@ h1,h2,h3,h4 { color: var(--txt) !important; letter-spacing: -.4px; }
 .badge-pop { animation: badge-pop .4s cubic-bezier(.4,0,.2,1) both; }
 
 hr { border-color: var(--border) !important; margin: 1.2rem 0 !important; }
+
+/* ─── Apple Intelligence Siri Chat Input ─────────── */
+[data-testid="stChatInput"] {
+  background: rgba(10,10,15,0.7) !important;
+  border-radius: 30px !important;
+  border: 1px solid rgba(255,255,255,0.1) !important;
+  backdrop-filter: blur(40px) saturate(200%) !important;
+  box-shadow: 0 0 0 1px rgba(255,255,255,0.05), 0 10px 40px rgba(0,0,0,0.5) !important;
+  position: relative;
+  overflow: visible !important;
+}
+[data-testid="stChatInput"]::before {
+  content: '';
+  position: absolute; inset: -2px; border-radius: 32px; z-index: -1;
+  background: linear-gradient(90deg, #818cf8, #22d3ee, #fb7185, #34d399, #818cf8);
+  background-size: 200% 100%;
+  animation: shimmer 4s linear infinite;
+  opacity: 0.4;
+  filter: blur(4px);
+  pointer-events: none;
+}
+[data-testid="stChatInput"] textarea {
+  color: var(--txt) !important;
+  font-size: 1rem !important;
+}
+[data-testid="stChatInputSubmitButton"] {
+  background: rgba(34,211,238,0.1) !important;
+  color: #22d3ee !important;
+  border-radius: 50% !important;
+}
+[data-testid="stChatInputSubmitButton"]:hover {
+  background: rgba(34,211,238,0.2) !important;
+  box-shadow: 0 0 15px rgba(34,211,238,0.4) !important;
+}
 </style>
 """, unsafe_allow_html=True)
 
@@ -918,84 +952,81 @@ with tab_query:
         if all_hazards: qs.append(f"How do we mitigate {all_hazards[0]}?")
         if all_sensors: qs.append(f"What does {all_sensors[0]} monitor?")
         qs += ["What hazards exist in the plant?","What safety standards govern operations?"]
-        qs = qs[:5]
+        qs = qs[:4]
+
+        # Handle prefilled query from JS bridge or quick queries
+        prefill = st.session_state.pop("prefill_query", "")
 
         # Empty state
         if not st.session_state.chat_history:
-            orb_html = siri_orb("idle", size=80)
+            orb_html = siri_orb("idle", size=90)
             st.markdown(f"""
-            <div class="fade-up" style="text-align:center; padding:3rem 1rem 2rem;">
-              <div style="margin-bottom:1.2rem;">{orb_html}</div>
-              <h2 style="color:var(--txt); font-weight:700; font-size:1.4rem; margin:0 0 .4rem;">
+            <div class="fade-up" style="text-align:center; padding:4rem 1rem 2rem;">
+              <div style="margin-bottom:1.5rem;">{orb_html}</div>
+              <h2 style="color:var(--txt); font-weight:700; font-size:1.6rem; margin:0 0 .5rem; letter-spacing:-0.5px;">
                 How can I help?
               </h2>
-              <p style="color:var(--txt3); font-size:.88rem; max-width:340px; margin:0 auto;">
+              <p style="color:var(--txt3); font-size:.9rem; max-width:380px; margin:0 auto 2rem; line-height:1.5;">
                 Ask anything about your industrial knowledge graph. I'll search through entities and relationships instantly.
               </p>
             </div>""", unsafe_allow_html=True)
 
-            # Quick query chips
-            st.markdown('<div style="display:flex; flex-wrap:wrap; gap:.5rem; justify-content:center; margin-bottom:1.5rem;">', unsafe_allow_html=True)
-            cols = st.columns(len(qs))
+            # Sleek vertical list for quick queries
+            st.markdown('<div class="fade-up" style="max-width:500px; margin:0 auto; display:flex; flex-direction:column; gap:0.6rem;">', unsafe_allow_html=True)
             for i, q in enumerate(qs):
-                label = q[:28]+"…" if len(q)>28 else q
-                if cols[i].button(label, key=f"qs_{i}", use_container_width=True):
-                    st.session_state["prefill_query"] = q
+                if st.button(f"✨ &nbsp; {q}", key=f"qs_{i}", use_container_width=True):
+                    prefill = q
             st.markdown('</div>', unsafe_allow_html=True)
         else:
-            # Show quick query row at top
-            qcols = st.columns(len(qs))
-            for i,q in enumerate(qs):
-                label = q[:22]+"…" if len(q)>22 else q
-                if qcols[i].button(label, key=f"qs_{i}", use_container_width=True):
-                    st.session_state["prefill_query"] = q
+            # Show quick query row at top in a scrollable horizontal flexbox if needed, or just let them scroll away
+            # Actually, if we are in chat history, we don't need to show them constantly, but we can put a "Clear Chat" button
+            col1, col2 = st.columns([8,1])
+            if col2.button("🗑️ Clear", use_container_width=True):
+                st.session_state.chat_history = []
+                st.rerun()
 
             st.markdown("<div style='height:.4rem'></div>", unsafe_allow_html=True)
 
-            # Chat messages — ChatGPT style
+            # Chat messages — Siri/ChatGPT translucent style
             for msg in st.session_state.chat_history:
                 if msg["role"] == "user":
                     st.markdown(f"""
                     <div class="msg-user" style="
-                      display:flex; justify-content:flex-end; margin:.7rem 0; gap:.6rem;
+                      display:flex; justify-content:flex-end; margin:.8rem 0; gap:.8rem;
                     ">
                       <div style="
-                        max-width:72%; background:rgba(255,255,255,.07);
-                        border:1px solid rgba(255,255,255,.1);
-                        border-radius:20px 20px 6px 20px;
-                        padding:.85rem 1.1rem;
-                        backdrop-filter:blur(20px);
+                        max-width:72%; background:rgba(255,255,255,.09);
+                        border:1px solid rgba(255,255,255,.15);
+                        border-radius:22px 22px 6px 22px;
+                        padding:.9rem 1.2rem;
+                        backdrop-filter:blur(30px);
+                        box-shadow:0 8px 24px rgba(0,0,0,.2);
                       ">
-                        <p style="margin:0; color:var(--txt); font-size:.9rem; line-height:1.55;">{msg['content']}</p>
-                        <span style="font-size:.65rem; color:var(--txt3); margin-top:.3rem; display:block;">{msg.get('time','')}</span>
+                        <p style="margin:0; color:var(--txt); font-size:.95rem; line-height:1.55;">{msg['content']}</p>
+                        <span style="font-size:.65rem; color:var(--txt3); margin-top:.4rem; display:block; text-align:right;">{msg.get('time','')}</span>
                       </div>
-                      <div style="
-                        width:34px; height:34px; border-radius:50%; flex-shrink:0;
-                        background:rgba(34,211,238,.12); border:1px solid rgba(34,211,238,.25);
-                        display:flex; align-items:center; justify-content:center; font-size:.95rem;
-                      ">👤</div>
                     </div>""", unsafe_allow_html=True)
                 else:
                     st.markdown(f"""
                     <div class="msg-ai" style="
-                      display:flex; justify-content:flex-start; margin:.7rem 0; gap:.6rem;
+                      display:flex; justify-content:flex-start; margin:.8rem 0; gap:.8rem;
                     ">
                       <div style="
-                        width:34px; height:34px; border-radius:50%; flex-shrink:0;
-                        background:linear-gradient(135deg,rgba(34,211,238,.2),rgba(129,140,248,.2));
-                        border:1px solid rgba(34,211,238,.2);
-                        display:flex; align-items:center; justify-content:center; font-size:.95rem;
-                        box-shadow:0 0 12px rgba(34,211,238,.15);
-                      ">🧠</div>
+                        width:38px; height:38px; border-radius:50%; flex-shrink:0;
+                        background:radial-gradient(circle at 30% 30%, #818cf8, #22d3ee, #fb7185);
+                        display:flex; align-items:center; justify-content:center; font-size:1.1rem;
+                        box-shadow:0 0 16px rgba(34,211,238,.2);
+                      ">✨</div>
                       <div style="
-                        max-width:76%; background:rgba(255,255,255,.03);
-                        border:1px solid var(--border);
-                        border-radius:6px 20px 20px 20px;
-                        padding:.85rem 1.1rem;
-                        backdrop-filter:blur(20px);
+                        max-width:78%; background:rgba(255,255,255,.03);
+                        border:1px solid rgba(255,255,255,.08);
+                        border-radius:8px 22px 22px 22px;
+                        padding:.9rem 1.2rem;
+                        backdrop-filter:blur(30px);
+                        box-shadow:0 8px 24px rgba(0,0,0,.2);
                       ">
-                        <p style="margin:0; color:var(--txt); font-size:.9rem; line-height:1.7; white-space:pre-wrap;">{msg['content']}</p>
-                        <span style="font-size:.65rem; color:var(--txt3); margin-top:.3rem; display:block;">{msg.get('time','')}</span>
+                        <p style="margin:0; color:var(--txt); font-size:.95rem; line-height:1.7; white-space:pre-wrap;">{msg['content']}</p>
+                        <span style="font-size:.65rem; color:var(--txt3); margin-top:.4rem; display:block;">{msg.get('time','')}</span>
                       </div>
                     </div>""", unsafe_allow_html=True)
 
@@ -1006,32 +1037,26 @@ with tab_query:
                     with st.expander("View retrieved graph context →"):
                         st.code(last["context"], language="text")
 
-        st.markdown("<div style='height:.8rem'></div>", unsafe_allow_html=True)
+        st.markdown("<div style='height:8rem'></div>", unsafe_allow_html=True) # Spacer for bottom input
 
-        # Input area — floating bottom style
-        prefill = st.session_state.pop("prefill_query","")
-        with st.form(key="chat_form", clear_on_submit=True):
-            user_input = st.text_input(
-                "", value=prefill,
-                placeholder="Ask anything about your industrial graph…",
-                label_visibility="collapsed",
-            )
-            c_sub, c_clr, c_dep = st.columns([4,1,2])
-            submit = c_sub.form_submit_button("Send  ⚡", use_container_width=True)
-            clear  = c_clr.form_submit_button("Clear", use_container_width=True)
-            depth  = c_dep.selectbox("Depth", [1,2,3], index=0, label_visibility="collapsed")
+        # Apple Intelligence glowing chat input
+        user_input = st.chat_input("Ask anything about your industrial graph…")
+        
+        # If prefill was triggered by a button or JS bridge, we execute it
+        query_to_run = user_input or prefill
 
-        if clear:
-            st.session_state.chat_history = []
-            st.rerun()
-
-        if submit and user_input.strip():
+        if query_to_run:
             ts = time.strftime("%H:%M")
-            st.session_state.chat_history.append({"role":"user","content":user_input,"time":ts})
-            activity_log(f"Query: {user_input[:38]}","","🤖")
+            st.session_state.chat_history.append({"role":"user","content":query_to_run,"time":ts})
+            activity_log(f"Query: {query_to_run[:38]}","","💬")
+            st.rerun() # Rerun immediately to show the user message
+
+        # If the last message is from the user, we need to generate a response
+        if st.session_state.chat_history and st.session_state.chat_history[-1]["role"] == "user":
+            last_msg = st.session_state.chat_history[-1]["content"]
             with st.spinner("Thinking…"):
                 try:
-                    ctx, answer = engine.query(user_input, top_k=5, context_depth=int(depth))
+                    ctx, answer = engine.query(last_msg, top_k=5, context_depth=2)
                     st.session_state.chat_history.append({
                         "role":"assistant","content":answer,
                         "time":time.strftime("%H:%M"),"context":ctx
