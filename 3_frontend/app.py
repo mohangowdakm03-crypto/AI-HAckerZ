@@ -74,17 +74,14 @@ st.markdown("""
     --border-hover: rgba(0,229,255,.3);
   }
 
-  /* ── Neural background canvas ── */
-  html, body { background: var(--bg-base) !important; }
+  /* ── Neural background — pure CSS, no canvas ── */
   .stApp {
-    background: transparent !important;
-    position: relative;
-  }
-  #neural-bg {
-    position: fixed; top: 0; left: 0;
-    width: 100vw; height: 100vh;
-    z-index: 0; pointer-events: none;
-    opacity: 0.35;
+    background:
+      radial-gradient(ellipse at 20% 50%, rgba(0,229,255,.04) 0%, transparent 60%),
+      radial-gradient(ellipse at 80% 20%, rgba(167,139,250,.04) 0%, transparent 55%),
+      radial-gradient(ellipse at 60% 80%, rgba(0,229,255,.03) 0%, transparent 50%),
+      #080810 !important;
+    background-attachment: fixed !important;
   }
   .main .block-container {
     position: relative; z-index: 1;
@@ -317,72 +314,8 @@ st.markdown("""
     transform: scale(1.04);
     box-shadow: 0 0 16px var(--accent-glow);
   }
-</style>
-
-<!-- Neural network background canvas -->
-<canvas id="neural-bg"></canvas>
-<script>
-(function(){
-  var canvas = document.getElementById('neural-bg');
-  if(!canvas) return;
-  var ctx = canvas.getContext('2d');
-  var W = canvas.width  = window.innerWidth;
-  var H = canvas.height = window.innerHeight;
-  window.addEventListener('resize', function(){
-    W = canvas.width  = window.innerWidth;
-    H = canvas.height = window.innerHeight;
-  });
-
-  var NODES = 55, nodes = [], CONN_DIST = 140;
-  for(var i=0;i<NODES;i++){
-    nodes.push({
-      x: Math.random()*W, y: Math.random()*H,
-      vx: (Math.random()-.5)*.35, vy: (Math.random()-.5)*.35,
-      r: Math.random()*2+1
-    });
-  }
-
-  function draw(){
-    ctx.clearRect(0,0,W,H);
-    // update
-    nodes.forEach(function(n){
-      n.x+=n.vx; n.y+=n.vy;
-      if(n.x<0||n.x>W) n.vx*=-1;
-      if(n.y<0||n.y>H) n.vy*=-1;
-    });
-    // edges
-    for(var i=0;i<nodes.length;i++){
-      for(var j=i+1;j<nodes.length;j++){
-        var dx=nodes[i].x-nodes[j].x, dy=nodes[i].y-nodes[j].y;
-        var dist=Math.sqrt(dx*dx+dy*dy);
-        if(dist<CONN_DIST){
-          ctx.beginPath();
-          ctx.moveTo(nodes[i].x,nodes[i].y);
-          ctx.lineTo(nodes[j].x,nodes[j].y);
-          ctx.strokeStyle='rgba(0,229,255,'+(0.18*(1-dist/CONN_DIST)).toFixed(3)+')';
-          ctx.lineWidth=0.6;
-          ctx.stroke();
-        }
-      }
-    }
-    // dots
-    nodes.forEach(function(n){
-      ctx.beginPath();
-      ctx.arc(n.x,n.y,n.r,0,Math.PI*2);
-      ctx.fillStyle='rgba(0,229,255,0.55)';
-      ctx.fill();
-    });
-    requestAnimationFrame(draw);
-  }
-  draw();
-})();
-</script>
 """, unsafe_allow_html=True)
 
-
-# ══════════════════════════════════════════════════════════════════════════════
-# HELPER COMPONENTS
-# ══════════════════════════════════════════════════════════════════════════════
 def hero_banner(stats: dict):
     node_count = stats.get("total_nodes", "—")
     edge_count = stats.get("total_edges", "—")
