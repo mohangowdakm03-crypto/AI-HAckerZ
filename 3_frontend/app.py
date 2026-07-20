@@ -71,38 +71,21 @@ st.markdown("""
   --radius:     16px;
 }
 
-/* ─── Aurora animated background ────────────────── */
-html, body { background: var(--ink) !important; }
+/* ─── Background ──────────────────────────────────── */
+html, body { background: #050508 !important; }
 
 .stApp {
-  background: var(--ink) !important;
-  position: relative;
-}
-
-/* Pseudo-aurora using a Streamlit-safe approach: inject via the root div */
-[data-testid="stAppViewContainer"]::before {
-  content: '';
-  position: fixed;
-  inset: 0;
-  z-index: 0;
-  pointer-events: none;
   background:
-    radial-gradient(ellipse 80% 60% at 10% 20%,  rgba(129,140,248,.12) 0%, transparent 60%),
-    radial-gradient(ellipse 60% 80% at 90% 80%,  rgba(34,211,238,.10)  0%, transparent 55%),
-    radial-gradient(ellipse 50% 50% at 50% 40%,  rgba(251,113,133,.06) 0%, transparent 50%),
-    radial-gradient(ellipse 70% 40% at 70% 10%,  rgba(52,211,153,.07)  0%, transparent 55%);
-  animation: aurora-drift 18s ease-in-out infinite alternate;
+    radial-gradient(ellipse 80% 60% at 10% 20%,  rgba(129,140,248,.09) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 80% at 90% 80%,  rgba(34,211,238,.07)  0%, transparent 55%),
+    radial-gradient(ellipse 50% 50% at 50% 40%,  rgba(251,113,133,.05) 0%, transparent 50%),
+    radial-gradient(ellipse 70% 40% at 70% 10%,  rgba(52,211,153,.06)  0%, transparent 55%),
+    #050508 !important;
+  background-attachment: fixed !important;
 }
 
-@keyframes aurora-drift {
-  0%   { opacity: .7; transform: scale(1)   translateY(0px); }
-  50%  { opacity: 1;  transform: scale(1.06) translateY(-20px); }
-  100% { opacity: .8; transform: scale(.97)  translateY(10px); }
-}
-
-/* ─── Layout ─────────────────────────────────────── */
+/* ─── Layout ────────────────────────────────────────── */
 .main .block-container {
-  position: relative; z-index: 1;
   padding: 1.2rem 1.8rem 3rem;
   max-width: 100%;
 }
@@ -623,7 +606,7 @@ with st.sidebar:
     # Live upload
     with st.expander("📎 Live Document Ingest"):
         st.markdown("<p style='font-size:.76rem; color:var(--txt3);'>Drop a TXT/PDF — AI extracts & merges live.</p>", unsafe_allow_html=True)
-        uploaded_file = st.file_uploader("", type=["txt","pdf"], label_visibility="collapsed")
+        uploaded_file = st.file_uploader("File", type=["txt","pdf"], label_visibility="collapsed")
         if uploaded_file is not None:
             if st.button("🚀 Extract & Merge", use_container_width=True):
                 raw_dir = DATA_DIR / "raw_documents"
@@ -666,7 +649,7 @@ with st.sidebar:
 
     # Filter
     st.markdown('<div style="font-size:.68rem; color:var(--txt3); letter-spacing:.7px; text-transform:uppercase; margin-bottom:.4rem;">Filter Nodes</div>', unsafe_allow_html=True)
-    filter_type = st.selectbox("", ["ALL","EQUIPMENT","SENSOR","PROCEDURE","HAZARD","COMPLIANCE_STANDARD"], label_visibility="collapsed")
+    filter_type = st.selectbox("Filter", ["ALL","EQUIPMENT","SENSOR","PROCEDURE","HAZARD","COMPLIANCE_STANDARD"], label_visibility="collapsed")
     st.session_state.filter_type = filter_type
 
 
