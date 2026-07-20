@@ -23,12 +23,15 @@ GRAPH_JSON = DATA_DIR / "graph_input.json"
 GRAPH_ML   = DATA_DIR / "graph.graphml"
 KG_DIR     = ROOT / "2_knowledge_graph"
 
-for p in (str(KG_DIR), str(ROOT)):
+VIS_DIR    = ROOT / "1_vision_extraction"
+
+for p in (str(KG_DIR), str(VIS_DIR), str(ROOT)):
     if p not in sys.path:
         sys.path.insert(0, p)
 
 from graph_builder import GraphRAGBuilder
 from graph_search  import GraphSearchEngine
+from batch_extractor import BatchExtractor
 
 # ── Read clicked node from URL query params (set by JS bridge) ────────────────
 _qp_node = st.query_params.get("node", "")
@@ -411,6 +414,35 @@ with st.sidebar:
             for k in ["graph_loaded", "builder", "engine", "graph_stats", "selected_node"]:
                 st.session_state[k] = None if k not in ["graph_loaded"] else False
             st.rerun()
+
+    st.markdown("<hr style='border-color:rgba(0,229,255,.15);'>", unsafe_allow_html=True)
+
+    # ── Live Document Upload ──
+    with st.expander("📄 Live Document Upload"):
+        st.markdown("<p style='font-size:.8rem; color:#8888aa;'>Upload a TXT or PDF document. The AI will extract new entities and merge them into the graph live.</p>", unsafe_allow_html=True)
+        uploaded_file = st.file_uploader("Upload file", type=["txt", "pdf"], label_visibility="collapsed")
+        if uploaded_file is not None:
+            if st.button("🚀 Extract & Merge", use_container_width=True):
+                # Save file temporarily
+                raw_dir = DATA_DIR / "raw_documents"
+                raw_dir.mkdir(exist_ok=True)
+                tmp_path = raw_dir / uploaded_file.name
+                with open(tmp_path, "wb") as f:
+                    f.write(uploaded_file.getbuffer())
+                
+                with st.spinner(f"Extracting knowledge from {uploaded_file.name} (this takes ~30-90s with Ollama)..."):
+                    extractor = BatchExtractor(inputs_dir=str(raw_dir), output_dir=str(DATA_DIR))
+                    success = extractor.process_single_file_and_merge(str(tmp_path), str(GRAPH_JSON))
+                    
+                if success:
+                    st.success("Successfully merged into graph!")
+                    # Clear caches and reload
+                    load_graph_resources.clear()
+                    for k in ["graph_loaded", "builder", "engine", "graph_stats", "selected_node"]:
+                        st.session_state[k] = None if k not in ["graph_loaded"] else False
+                    st.rerun()
+                else:
+                    st.error("Extraction failed or no data found.")
 
     st.markdown("<hr style='border-color:rgba(0,229,255,.15);'>", unsafe_allow_html=True)
 

@@ -437,6 +437,68 @@ CRITICAL RULES:
             return False, message
 
 
+    def process_single_file_and_merge(self, file_path: str, existing_json_path: str) -> bool:
+        """Extract entities/relationships from a single file and merge them into an existing graph contract."""
+        p = Path(file_path)
+        if not p.exists():
+            print(f"[!] File not found: {file_path}")
+            return False
+
+        print(f"\n[*] Processing single file: {p.name}")
+        document_id = p.stem.upper().replace(' ', '-')
+
+        # Extract text
+        if p.suffix.lower() == '.pdf':
+            text_content = self._extract_text_from_pdf(p)
+        else:
+            text_content = self._extract_text_from_txt(p)
+
+        if not text_content or not text_content.strip():
+            print("   [!] File is empty or unreadable.")
+            return False
+
+        # Chunk and extract
+        chunks = self._chunk_text(text_content)
+        if not chunks:
+            return False
+
+        file_level_results: List[Dict] = []
+        for j, chunk in enumerate(chunks, 1):
+            print(f"   -> Chunk {j}/{len(chunks)}")
+            extracted = self._extract_from_text(chunk, document_id)
+            if extracted:
+                file_level_results.append(extracted)
+
+        if not file_level_results:
+            print("   [!] No data extracted.")
+            return False
+
+        # Load existing graph
+        existing_data = []
+        if os.path.exists(existing_json_path):
+            try:
+                with open(existing_json_path, 'r', encoding='utf-8') as fh:
+                    existing = json.load(fh)
+                    # We wrap it in a list so _merge_data can treat it as one of the results
+                    existing_data.append(existing)
+            except Exception as e:
+                print(f"   [!] Failed to load existing graph: {e}")
+
+        # Combine old data with the new file's results
+        all_results = existing_data + file_level_results
+        master_contract = self._merge_data(all_results)
+
+        try:
+            with open(existing_json_path, 'w', encoding='utf-8') as fh:
+                json.dump(master_contract, fh, indent=2)
+            
+            print(f"[✓] Graph updated with {p.name}. Saved to {existing_json_path}")
+            return True
+        except Exception as e:
+            print(f"   [!] Failed to save updated graph: {e}")
+            return False
+
+
 def main():
     extractor = BatchExtractor(inputs_dir='../data/raw_documents', output_dir='../data')
     success, message = extractor.process_batch()
