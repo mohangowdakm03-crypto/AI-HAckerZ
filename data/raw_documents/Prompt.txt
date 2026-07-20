@@ -1,0 +1,66 @@
+Act as an elite Python AI Solutions Architect and Senior Developer. I am participating in the ET AI Hackathon 2026. Our team consists of 4 developers working completely remotely from 4 different locations. We are on a critical, fast-paced timeline: all development must be completed and integrated by July 21st for final submission on July 22nd. 
+
+We are tackling Problem Statement 8: "AI for Industrial Knowledge Intelligence: Unified Asset & Operations Brain." To maximize our chances of winning, we are avoiding generic cloud API wrappers. We are building a highly innovative, ultra-lightweight, completely offline Edge-Computing GraphRAG Pipeline. It is designed to run flawlessly on standard field hardware (like a local laptop) without external internet or cloud dependencies.
+
+Here is our exact architecture, workflow, data contract, and team distribution. You must memorize this entire ecosystem to ensure any code you write for me integrates perfectly with my remote teammates' work.
+
+---
+
+### 1. THE ARCHITECTURE & TECH STACK
+Our system processes unstructured industrial documents (manuals, shift logs) into a structured graph, then uses a local LLM to query that graph.
+* Core Language: Python
+* Local Inference Engine: Ollama running lightweight edge models (Llama 3.2 3B or Phi-3-mini) to guarantee blazing-fast local performance and zero API costs.
+* Graph Database Layer: NetworkX (Pure Python mathematical graph library)
+* UI & Visualizations: Streamlit for the application dashboard, paired with Pyvis or streamlit-agraph to visually render the knowledge network to the judges.
+
+---
+
+### 2. THE TEAM ROLES & RESPONSIBILITIES
+Because we are working asynchronously across different locations, our modules connect via static files. No complex live server networking is allowed.
+* PERSON 1 (Data & Extraction Lead): Writes the Python script utilizing Ollama's structured JSON mode to parse raw text/PDFs and extract entities and relationships directly into our locked data contract schema.
+* PERSON 2 (Graph Architecture Lead): Writes the Python backend module that reads Person 1's JSON files, builds a directed NetworkX graph, and creates a search function to extract local graph context based on a user's query.
+* PERSON 3 (Full-Stack Integration Lead): Builds the Streamlit web application interface. Renders the live interactive graph visually on the screen, captures the user's chat input, runs Person 2's search function, and pipes the final context back to the local Ollama model to generate an answer.
+* PERSON 4 (Product & Deliverables Lead): Architect of the system diagrams, presentation deck, and the final high-end 2-minute demo video showcase. Ensures the UI layouts match enterprise standards and translates the codebase into visual business impact for the judging panel.
+
+---
+
+### 3. THE STRICT DATA CONTRACT
+All code modules must strictly adhere to this exact JSON structure for passing data between the extraction layer, the graph layer, and the UI. Do not alter these keys:
+
+{
+  "document_id": "UNIQUE-DOC-ID-001",
+  "entities": [
+    {
+      "node_id": "EQUIPMENT-OR-TAG-ID",
+      "entity_type": "MUST BE ONLY: EQUIPMENT, SENSOR, PROCEDURE, HAZARD, or COMPLIANCE_STANDARD",
+      "description": "Brief textual description of the entity"
+    }
+  ],
+  "relationships": [
+    {
+      "source_node": "NODE-ID-A",
+      "target_node": "NODE-ID-B",
+      "relation_type": "e.g., CONNECTED_TO, GOVERNED_BY, TRIGGERS",
+      "context": "Detailed mechanical or operational relationship context explaining the link"
+    }
+  ]
+}
+
+---
+
+### 4. EXPECTED OUTCOME
+A completely functional, lightning-fast local desktop web app where an industrial engineer can type a natural language query, see a live visual map of how their plant assets and compliance documents link together, and receive an accurate, context-rich answer cited directly from the local graph database.
+
+---
+
+### 5. MY ACTIVE ROLE & CURRENT TASK
+I am Mohan Gowda / Role 4 - product and deliverables lead . 
+
+My immediate task is to: 4️⃣ Person 4: Product & Deliverables Lead (You)
+Objective: Lock in the visual and narrative architecture.
+Paste this after the Master Prompt:
+I am PERSON 4: PRODUCT & DELIVERABLES LEAD.
+My immediate task is to: Design the exact system architecture diagram for our offline Edge-Computing GraphRAG Pipeline. List the distinct visual nodes, data flow arrows, and technical labels I need to include in my diagram to explain how data moves from a raw PDF, through our local 3B model, into NetworkX, and finally into the Streamlit UI. Additionally, provide the slide-by-slide narrative structure for a 5-slide pitch deck focusing heavily on reducing the 18-22% unplanned downtime metric.
+
+
+Acknowledge that you understand our 4-person remote team constraints, our locked data schema, and our lightweight local tech stack. Then, provide the optimal, highly modular, and cleanly commented Python code to execute my current task.
