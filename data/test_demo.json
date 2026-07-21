@@ -1,0 +1,125 @@
+{
+    "document_id": "MAINTENANCE_LOG",
+    "entities": [
+        {
+            "node_id": "WATER-COOLING-SYSTEM",
+            "entity_type": "EQUIPMENT",
+            "description": "Water cooling system"
+        },
+        {
+            "node_id": "VALVE-204",
+            "entity_type": "EQUIPMENT",
+            "description": "Regulates flow to HEAT-EXCHANGER-01"
+        },
+        {
+            "node_id": "HEAT-EXCHANGER-01",
+            "entity_type": "EQUIPMENT",
+            "description": "Heat exchanger"
+        },
+        {
+            "node_id": "PUMP-101B",
+            "entity_type": "EQUIPMENT",
+            "description": "Causes secondary stress due to restricted water flow"
+        },
+        {
+            "node_id": "HIGH-PRESSURE-ALARM",
+            "entity_type": "PROCEDURE",
+            "description": "Triggered by PUMP-101B failure"
+        },
+        {
+            "node_id": "SYSTEM-OVERPRESSURE",
+            "entity_type": "HAZARD",
+            "description": "Risk of system overpressure"
+        },
+        {
+            "node_id": "PRESSURE-SENS-12",
+            "entity_type": "SENSOR",
+            "description": "Monitors output of PUMP-101B"
+        },
+        {
+            "node_id": "SCADA-DASHBOARD",
+            "entity_type": "EQUIPMENT",
+            "description": "Central SCADA dashboard"
+        },
+        {
+            "node_id": "EMERGENCY-SHUTDOWN-PROCEDURE",
+            "entity_type": "PROCEDURE",
+            "description": "Emergency shutdown procedure for the main facility"
+        },
+        {
+            "node_id": "FIRE-ALARM",
+            "entity_type": "SENSOR",
+            "description": "Alarm that indicates a fire hazard"
+        },
+        {
+            "node_id": "FIRE-HAZARD",
+            "entity_type": "HAZARD",
+            "description": "Fire hazard condition"
+        },
+        {
+            "node_id": "GAS-PIPELINE",
+            "entity_type": "EQUIPMENT",
+            "description": "Pipeline for gas supply"
+        },
+        {
+            "node_id": "MAIN-VALVE",
+            "entity_type": "EQUIPMENT",
+            "description": "Main valve controlling the pipeline"
+        },
+        {
+            "node_id": "EXPLOSION-HAZARD",
+            "entity_type": "HAZARD",
+            "description": "Severe explosion hazard condition"
+        }
+    ],
+    "relationships": [
+        {
+            "source_node": "VALVE-204",
+            "target_node": "HEAT-EXCHANGER-01",
+            "relation_type": "REGULATES_FLOW_TO",
+            "context": "Regulates flow to HEAT-EXCHANGER-01"
+        },
+        {
+            "source_node": "PUMP-101B",
+            "target_node": "HIGH-PRESSURE-ALARM",
+            "relation_type": "TRIGGERS",
+            "context": "Triggered by PUMP-101B failure"
+        },
+        {
+            "source_node": "VALVE-204",
+            "target_node": "SYSTEM-OVERPRESSURE",
+            "relation_type": "CAUSES",
+            "context": "Causes risk of system overpressure"
+        },
+        {
+            "source_node": "PUMP-101B",
+            "target_node": "PRESSURE-SENS-12",
+            "relation_type": "MONITORED_BY",
+            "context": "Monitors output of PUMP-101B"
+        },
+        {
+            "source_node": "PRESSURE-SENS-12",
+            "target_node": "SCADA-DASHBOARD",
+            "relation_type": "CONNECTED_TO",
+            "context": "Connected to central SCADA dashboard"
+        },
+        {
+            "source_node": "FIRE-ALARM",
+            "target_node": "EMERGENCY-SHUTDOWN-PROCEDURE",
+            "relation_type": "TRIGGERS",
+            "context": "The fire alarm triggers the emergency shutdown procedure"
+        },
+        {
+            "source_node": "EMERGENCY-SHUTDOWN-PROCEDURE",
+            "target_node": "GAS-PIPELINE",
+            "relation_type": "ISOLATES",
+            "context": "The procedure isolates the gas pipeline"
+        },
+        {
+            "source_node": "EMERGENCY-SHUTDOWN-PROCEDURE",
+            "target_node": "MAIN-VALVE",
+            "relation_type": "SHUTS_OFF",
+            "context": "The procedure shuts off the main valve"
+        }
+    ]
+}

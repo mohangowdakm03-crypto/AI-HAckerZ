@@ -4,10 +4,10 @@ import dynamic from 'next/dynamic';
 
 const ForceGraph2D = dynamic(() => import('react-force-graph-2d'), { ssr: false });
 
-const GraphVisualizer = React.memo(({ data }: { data: any }) => {
+export default function GraphVisualizer({ data }: { data: any }) {
   const [dimensions, setDimensions] = useState({ width: 800, height: 600 });
   const containerRef = React.useRef<HTMLDivElement>(null);
-  const fgRef = React.useRef<any>(null);
+  const fgRef = React.useRef<any>();
   const [activeNode, setActiveNode] = useState<string | null>(null);
   const [blastRadius, setBlastRadius] = useState<Set<string>>(new Set());
 
@@ -57,9 +57,9 @@ const GraphVisualizer = React.memo(({ data }: { data: any }) => {
   useEffect(() => {
     if (fgRef.current) {
       // Increase repulsion between nodes to prevent text overlap
-      fgRef.current.d3Force('charge').strength(-600);
-      // Increase the ideal distance between connected nodes for better spacing
-      fgRef.current.d3Force('link').distance(150);
+      fgRef.current.d3Force('charge').strength(-400);
+      // Increase the ideal distance between connected nodes
+      fgRef.current.d3Force('link').distance(100);
     }
   }, [data]);
 
@@ -102,10 +102,10 @@ const GraphVisualizer = React.memo(({ data }: { data: any }) => {
           return 'rgba(15, 23, 42, 0.03)';
         }}
         linkWidth={(link: any) => {
-          if (!activeNode) return 3;
+          if (!activeNode) return 1.5;
           const sourceId = typeof link.source === 'object' ? link.source.id : link.source;
           const targetId = typeof link.target === 'object' ? link.target.id : link.target;
-          return (blastRadius.has(sourceId) && blastRadius.has(targetId)) ? 5 : 2;
+          return (blastRadius.has(sourceId) && blastRadius.has(targetId)) ? 3 : 1;
         }}
         linkDirectionalParticles={(link: any) => {
           if (!activeNode) return 2;
@@ -179,6 +179,4 @@ const GraphVisualizer = React.memo(({ data }: { data: any }) => {
       />
     </div>
   );
-});
-
-export default GraphVisualizer;
+}

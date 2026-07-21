@@ -1,0 +1,7 @@
+The Geo-Thermal Energy Plant relies on the Main Turbine (EQ-01) to generate power. The Main Turbine is directly connected to the Generator (EQ-05). To monitor the turbine's health, Vibration Sensor Delta (SN-04) and RPM Sensor Eta (SN-07) are installed directly on its casing. 
+
+The Heat Exchanger (EQ-02) feeds steam into the turbine, and its internal temperature is strictly monitored by Temp Sensor Alpha (SN-01). The Coolant Pump (EQ-03) circulates fluid through the Heat Exchanger, and this flow is regulated by Control Valve A (EQ-07). Flow Meter Gamma (SN-03) tracks the output volume of the Coolant Pump. 
+
+Steam exits the turbine into the Condenser (EQ-04), where Pressure Gauge Beta (SN-02) ensures it doesn't exceed safety limits. Reclaimed water is then pushed to the Cooling Tower (EQ-09) by the Injection Well Pump (EQ-06), whose fluid basin level is checked by Level Sensor Epsilon (SN-05). 
+
+Additionally, Control Valve B (EQ-08) manages the raw flow to the auxiliary Boiler (EQ-10). The overall electrical output from the Generator is tracked by Voltage Monitor Zeta (SN-06), while the Thermal Imager Theta (SN-08) continuously scans the entire Boiler for structural hotspots.

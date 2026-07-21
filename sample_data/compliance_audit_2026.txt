@@ -1,0 +1,8 @@
+AUDIT REPORT - Q3 2026
+Inspector: J. Doe
+Date: Aug 12, 2026
+
+During the inspection, we noticed that the SECONDARY-CONTAINMENT-UNIT is CONNECTED_TO the PRIMARY-REACTOR. 
+The PRIMARY-REACTOR is currently operating without the required OVERFLOW-SENSOR. 
+Operating without this sensor violates the EPA-SAFETY-STANDARD. This CAUSES a severe ENVIRONMENTAL-HAZARD. 
+We strongly advise installing the OVERFLOW-SENSOR immediately to mitigate the ENVIRONMENTAL-HAZARD.

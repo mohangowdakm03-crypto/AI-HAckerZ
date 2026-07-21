@@ -1,9 +1,5 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800&family=JetBrains+Mono:wght@400;500&display=swap');
 
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
-
 :root {
   /* ── Prismatic Frost Theme ────────────────────────── */
   --ink:          #f4f7fb;
@@ -186,118 +182,122 @@ a { color: inherit; text-decoration: none; }
   box-shadow:
     inset 0 3px 6px rgba(0, 0, 0, 0.04),
     inset 0 1px 2px rgba(0, 0, 0, 0.05),
-    0 0 0 4px rgba(56, 189, 248, 0.15),
-    0 1px 2px rgba(255, 255, 255, 0.8);
 }
 
-/* ─── Apple Liquid Glass ────────────────────────── */
+/* ─── Photorealistic Apple Liquid Glass ───────────────────────── */
+:root {
+  /* ... existing vars ... */
+  --glass-noise: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.08'/%3E%3C/svg%3E");
+}
+
+/* ─── Photorealistic Apple Liquid Glass ───────────────────────── */
+/* Features: 3D optical depth, edge refraction, Fresnel, dispersion, volumetric thickness */
+
 .apple-glass-panel {
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.4) 0%, rgba(255, 255, 255, 0.1) 100%);
-  backdrop-filter: blur(24px) saturate(180%);
-  -webkit-backdrop-filter: blur(24px) saturate(180%);
-  border: 1px solid rgba(255, 255, 255, 0.5);
-  border-bottom-color: rgba(255, 255, 255, 0.2);
-  border-right-color: rgba(255, 255, 255, 0.2);
-  border-radius: 20px;
+  background: 
+    linear-gradient(145deg, rgba(255, 255, 255, 0.45) 0%, rgba(255, 255, 255, 0.05) 100%),
+    var(--glass-noise);
+  backdrop-filter: url(#apple-glass-dispersion) blur(30px) saturate(200%);
+  -webkit-backdrop-filter: url(#apple-glass-dispersion) blur(30px) saturate(200%);
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  border-bottom-color: rgba(255, 255, 255, 0.3);
+  border-right-color: rgba(255, 255, 255, 0.3);
+  border-radius: 24px;
   box-shadow: 
-    inset 0 4px 10px rgba(255, 255, 255, 0.6),
-    inset 0 -4px 10px rgba(0, 0, 0, 0.05),
-    0 20px 40px rgba(0, 0, 0, 0.08),
-    0 8px 16px rgba(2, 132, 199, 0.05);
-  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-}
-.apple-glass-panel:hover {
-  transform: translateY(-2px) scale(1.01);
-  box-shadow: 
-    inset 0 4px 12px rgba(255, 255, 255, 0.8),
-    inset 0 -4px 10px rgba(0, 0, 0, 0.05),
-    0 24px 48px rgba(0, 0, 0, 0.1),
-    0 12px 24px rgba(2, 132, 199, 0.08);
+    inset 1px 1px 2px rgba(255, 255, 255, 1),
+    inset -1px -1px 2px rgba(255, 255, 255, 0.5), /* Fresnel Edge */
+    inset 4px 0 8px rgba(255, 0, 0, 0.04), /* Chromatic Red Dispersion */
+    inset -4px 0 8px rgba(0, 0, 255, 0.04), /* Chromatic Blue Dispersion */
+    0 16px 40px rgba(0, 0, 0, 0.08),
+    0 4px 12px rgba(0, 0, 0, 0.04);
+  text-shadow: 0 1px 1px rgba(255, 255, 255, 0.8);
+  transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
-.apple-glass-capsule {
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.5) 0%, rgba(255, 255, 255, 0.15) 100%);
-  backdrop-filter: blur(20px) saturate(160%);
-  -webkit-backdrop-filter: blur(20px) saturate(160%);
-  border: 1px solid rgba(255, 255, 255, 0.6);
-  border-bottom-color: rgba(255, 255, 255, 0.15);
-  border-right-color: rgba(255, 255, 255, 0.15);
+.apple-glass-panel:hover {
+  transform: translateY(-4px) scale(1.02);
+  background: 
+    linear-gradient(145deg, rgba(255, 255, 255, 0.55) 0%, rgba(255, 255, 255, 0.1) 100%),
+    var(--glass-noise);
+  box-shadow: 
+    inset 1px 1px 3px rgba(255, 255, 255, 1),
+    inset -1px -1px 3px rgba(255, 255, 255, 0.6),
+    inset 6px 0 10px rgba(255, 0, 0, 0.05),
+    inset -6px 0 10px rgba(0, 0, 255, 0.05),
+    0 24px 48px rgba(0, 0, 0, 0.12),
+    0 8px 16px rgba(0, 0, 0, 0.06);
+}
+
+.apple-glass-panel:active {
+  transform: translateY(0px) scale(0.98);
+  box-shadow: 
+    inset 1px 1px 2px rgba(255, 255, 255, 0.8),
+    inset 0 2px 8px rgba(0, 0, 0, 0.05),
+    0 4px 12px rgba(0, 0, 0, 0.04);
+}
+
+.apple-glass-capsule,
+.apple-glass-capsule-inactive {
+  background: 
+    linear-gradient(135deg, rgba(255, 255, 255, 0.6) 0%, rgba(255, 255, 255, 0.15) 100%),
+    var(--glass-noise);
+  backdrop-filter: url(#apple-glass-dispersion) blur(25px) saturate(180%);
+  -webkit-backdrop-filter: url(#apple-glass-dispersion) blur(25px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  border-bottom-color: rgba(255, 255, 255, 0.3);
+  border-right-color: rgba(255, 255, 255, 0.3);
   border-radius: 100px;
   box-shadow: 
-    inset 0 2px 6px rgba(255, 255, 255, 0.8),
-    inset 0 -2px 6px rgba(0, 0, 0, 0.05),
-    0 10px 20px rgba(0, 0, 0, 0.05),
-    0 4px 10px rgba(124, 58, 237, 0.06);
+    inset 1px 1px 2px rgba(255, 255, 255, 1),
+    inset -1px -1px 2px rgba(255, 255, 255, 0.5), /* Fresnel Edge */
+    inset 3px 0 6px rgba(255, 0, 0, 0.05), /* Chromatic Red */
+    inset -3px 0 6px rgba(0, 0, 255, 0.05), /* Chromatic Blue */
+    0 10px 24px rgba(0, 0, 0, 0.08),
+    0 4px 10px rgba(0, 0, 0, 0.04);
   transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
   cursor: pointer;
   color: var(--txt);
+  text-shadow: 0 1px 1px rgba(255, 255, 255, 0.9);
 }
-.apple-glass-capsule:hover {
+
+.apple-glass-capsule-inactive {
+  background: transparent;
+  border: 1px solid transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  color: var(--txt2);
+}
+
+.apple-glass-capsule:hover,
+.apple-glass-capsule-inactive:hover {
   transform: translateY(-2px) scale(1.02);
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.65) 0%, rgba(255, 255, 255, 0.25) 100%);
+  background: 
+    linear-gradient(135deg, rgba(255, 255, 255, 0.7) 0%, rgba(255, 255, 255, 0.25) 100%),
+    var(--glass-noise);
+  backdrop-filter: url(#apple-glass-dispersion) blur(25px) saturate(180%);
+  -webkit-backdrop-filter: url(#apple-glass-dispersion) blur(25px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 1);
+  border-bottom-color: rgba(255, 255, 255, 0.4);
+  border-right-color: rgba(255, 255, 255, 0.4);
   box-shadow: 
-    inset 0 2px 8px rgba(255, 255, 255, 1),
-    inset 0 -2px 6px rgba(0, 0, 0, 0.05),
-    0 14px 28px rgba(0, 0, 0, 0.08),
-    0 6px 14px rgba(124, 58, 237, 0.08);
-}
-.apple-glass-capsule:active {
-  transform: translateY(1px) scale(0.98);
-  box-shadow: 
-    inset 0 4px 8px rgba(0, 0, 0, 0.1),
-    inset 0 -1px 2px rgba(255, 255, 255, 0.4),
-    0 2px 4px rgba(0, 0, 0, 0.05);
-}
-
-.apple-convex-button {
-  background: var(--surface2);
-  backdrop-filter: blur(24px) saturate(200%);
-  -webkit-backdrop-filter: blur(24px) saturate(200%);
-  border: 1px solid var(--border);
-  border-bottom-color: rgba(255, 255, 255, 0.1);
-  border-right-color: rgba(255, 255, 255, 0.1);
-  border-radius: 50%;
-  box-shadow: 
-    inset 0 2px 4px rgba(255, 255, 255, 1),
-    inset 0 -2px 4px rgba(0, 0, 0, 0.15),
-    0 8px 16px rgba(0, 0, 0, 0.08);
-  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-  cursor: pointer;
-}
-.apple-convex-button:hover {
-  transform: translateY(-2px) scale(1.05);
-  background: rgba(255, 255, 255, 0.4);
-  box-shadow: 
-    inset 0 3px 6px rgba(255, 255, 255, 1),
-    inset 0 -2px 4px rgba(0, 0, 0, 0.1),
-    0 12px 24px rgba(0, 0, 0, 0.1);
-}
-.apple-convex-button:active {
-  transform: translateY(1px) scale(0.95);
-  box-shadow: 
-    inset 0 4px 8px rgba(0, 0, 0, 0.2),
-    0 2px 4px rgba(0, 0, 0, 0.05);
+    inset 1px 1px 2px rgba(255, 255, 255, 1),
+    inset -1px -1px 2px rgba(255, 255, 255, 0.6),
+    inset 4px 0 8px rgba(255, 0, 0, 0.06),
+    inset -4px 0 8px rgba(0, 0, 255, 0.06),
+    0 14px 28px rgba(0, 0, 0, 0.12),
+    0 6px 14px rgba(0, 0, 0, 0.06);
+  color: var(--txt);
 }
 
-.apple-glass-pill {
-  background: var(--surface);
-  backdrop-filter: blur(24px) saturate(180%);
-  -webkit-backdrop-filter: blur(24px) saturate(180%);
-  border: 1px solid var(--border);
-  border-bottom-color: rgba(255, 255, 255, 0.5);
-  border-top-color: rgba(0, 0, 0, 0.05);
-  border-radius: 100px;
+.apple-glass-capsule:active,
+.apple-glass-capsule-inactive:active {
+  transform: translateY(1px) scale(0.97);
+  background: 
+    linear-gradient(135deg, rgba(255, 255, 255, 0.5) 0%, rgba(255, 255, 255, 0.1) 100%),
+    var(--glass-noise);
   box-shadow: 
-    inset 0 4px 8px rgba(0, 0, 0, 0.04),
-    inset 0 1px 2px rgba(0, 0, 0, 0.05),
-    0 4px 12px rgba(0, 0, 0, 0.04);
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-.apple-glass-pill:focus-within {
-  background: rgba(255, 255, 255, 0.3);
-  border-color: rgba(56, 189, 248, 0.4);
-  box-shadow: 
-    inset 0 4px 8px rgba(0, 0, 0, 0.03),
-    0 0 0 4px rgba(56, 189, 248, 0.15),
-    0 4px 12px rgba(0, 0, 0, 0.04);
+    inset 1px 1px 2px rgba(255, 255, 255, 0.6),
+    inset 0 4px 8px rgba(0, 0, 0, 0.05),
+    0 2px 6px rgba(0, 0, 0, 0.04);
 }

@@ -1,0 +1,11 @@
+{
+  "network": "COOLING-TOWER-BETA",
+  "data": [
+    {
+      "component": "CIRCULATION-PUMP-X",
+      "status": "MAINTENANCE",
+      "monitored_by": "FLOW-METER-X",
+      "notes": "CIRCULATION-PUMP-X is CONNECTED_TO the HEAT-EXCHANGER-02. The current downtime requires executing the EMERGENCY-BYPASS-PROCEDURE. Failure to do so CAUSES a THERMAL-RUNAWAY-HAZARD."
+    }
+  ]
+}

@@ -1,0 +1,20 @@
+INDUSTRIAL PLANT TOPOLOGY & OPERATIONS REPORT
+Document ID: ET-HACKATHON-2026-DEMO
+
+1.0 EQUIPMENT OVERVIEW
+The main production line relies heavily on PUMP-101A and PUMP-101B. 
+PUMP-101A is CONNECTED_TO the HEAT-EXCHANGER-01.
+PUMP-101B serves as a redundant backup.
+VALVE-204 regulates the flow from HEAT-EXCHANGER-01 to the PRIMARY-CENTRIFUGE.
+
+2.0 SENSORS AND MONITORING
+TEMP-SENS-08 actively MONITORS the HEAT-EXCHANGER-01. 
+PRESSURE-SENS-12 actively MONITORS PUMP-101A.
+
+3.0 HAZARDS AND RISKS
+If PUMP-101A fails, it CAUSES a severe OVERHEATING-HAZARD in the system.
+If the OVERHEATING-HAZARD occurs, it disrupts the entire COOLING-SYSTEM.
+
+4.0 SAFETY PROCEDURES
+To mitigate the OVERHEATING-HAZARD, operators must execute the EMERGENCY-COOLING-PROCEDURE. 
+This procedure requires shutting down VALVE-204 and activating the backup PUMP-101B.

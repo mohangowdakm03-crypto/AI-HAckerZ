@@ -1,0 +1,8 @@
+SHIFT HANDOVER LOG - NIGHT SHIFT
+Operator: M. Smith
+
+Notes for morning shift:
+The CONVEYOR-BELT-A was halting intermittently tonight. It is CONNECTED_TO the PACKAGING-ROBOT. 
+If CONVEYOR-BELT-A stops, it disrupts the PACKAGING-ROBOT. 
+We applied the LUBRICATION-PROCEDURE to the bearings, which seemed to help temporarily.
+Please monitor VIBRATION-SENSOR-02, which MONITORS the CONVEYOR-BELT-A motor. If it spikes above 15Hz, it indicates a MECHANICAL-FAILURE-HAZARD.

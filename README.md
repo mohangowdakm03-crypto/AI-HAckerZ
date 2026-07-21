@@ -74,3 +74,12 @@ The frontend provides the interactive UI, built with Next.js and Tailwind CSS (o
 3.  Wait for the ingestion process to complete. The system will build a Knowledge Graph and embed the entities into a local ChromaDB collection.
 4.  Navigate to the **Graph** tab on the left sidebar to visualize the extracted network.
 5.  Return to the **AI Chat** tab and ask complex, multi-hop questions about the data!
+
+---
+
+## Project Documentation (PS 8 Submission)
+
+This repository includes the comprehensive documentation required for the **PS 8: AI for Industrial Knowledge Intelligence** submission:
+* **[Pitch Deck Outline](./pitch_deck_outline.md)** - A structured 12-slide presentation outline covering the Hook, UX Agility, Architecture Pipeline, ROI, and Technical Roadmaps.
+* **[Project Whitepaper](./project_whitepaper.md)** - A highly detailed technical whitepaper documenting the full problem statement, solution architecture, and execution risks.
+* **[Architecture Diagram](./architecture_diagram.md)** - A Mermaid.js flowchart detailing the end-to-end data ingestion, extraction, and generation pipeline.

@@ -1,0 +1,15 @@
+{
+  "system_log": "CHEMICAL-MIXER-X9",
+  "data": [
+    {
+      "component": "ACID-STORAGE-TANK",
+      "status": "ONLINE",
+      "notes": "ACID-STORAGE-TANK holds 50,000 gallons of corrosive material.",
+      "known_hazards": [
+        "A rupture in the ACID-STORAGE-TANK CAUSES a MASSIVE-CHEMICAL-SPILL-HAZARD."
+      ],
+      "monitored_by": "NONE",
+      "mitigation_procedures": "NONE"
+    }
+  ]
+}

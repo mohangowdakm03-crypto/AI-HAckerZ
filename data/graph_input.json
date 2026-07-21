@@ -1,184 +1,203 @@
 {
-  "document_id": "ET-HACKATHON-2026-DEMO",
+  "document_id": "BATCH-RUN-2026",
   "entities": [
     {
-      "node_id": "PUMP-101A",
+      "node_id": "ACID-STORAGE-TANK",
       "entity_type": "EQUIPMENT",
-      "description": "Primary cooling water pump for the reactor system. Rated at 500 GPM at 75 PSI."
+      "description": "holds 50,000 gallons of corrosive material."
     },
     {
-      "node_id": "PUMP-101B",
-      "entity_type": "EQUIPMENT",
-      "description": "Standby redundant cooling pump. Automatically engages on PUMP-101A failure."
-    },
-    {
-      "node_id": "VALVE-204",
-      "entity_type": "EQUIPMENT",
-      "description": "Motorized gate valve regulating intake flow to the reactor cooling loop."
-    },
-    {
-      "node_id": "VALVE-205",
-      "entity_type": "EQUIPMENT",
-      "description": "Bypass valve for emergency flow rerouting during scheduled maintenance."
-    },
-    {
-      "node_id": "HEAT-EXCHANGER-01",
-      "entity_type": "EQUIPMENT",
-      "description": "Shell-and-tube heat exchanger transferring heat from reactor coolant to secondary loop."
-    },
-    {
-      "node_id": "TEMP-SENS-08",
-      "entity_type": "SENSOR",
-      "description": "PT100 RTD sensor monitoring casing temperature of PUMP-101A. Range: 0-150°C."
-    },
-    {
-      "node_id": "PRESS-SENS-12",
-      "entity_type": "SENSOR",
-      "description": "Differential pressure sensor across the cooling loop. Triggers alarm below 30 PSI."
-    },
-    {
-      "node_id": "FLOW-METER-03",
-      "entity_type": "SENSOR",
-      "description": "Electromagnetic flow meter measuring volumetric flow rate in the main cooling line."
-    },
-    {
-      "node_id": "VIBRATION-SENS-07",
-      "entity_type": "SENSOR",
-      "description": "Accelerometer detecting abnormal vibration on PUMP-101A bearing assembly."
-    },
-    {
-      "node_id": "EMERGENCY-SHUTDOWN-01",
-      "entity_type": "PROCEDURE",
-      "description": "ESD protocol SOP-ESD-01: isolates reactor coolant loop within 30 seconds of critical alarm."
-    },
-    {
-      "node_id": "PREVENTIVE-MAINT-PM03",
-      "entity_type": "PROCEDURE",
-      "description": "Quarterly bearing lubrication and seal inspection for all centrifugal pumps."
-    },
-    {
-      "node_id": "OVERHEATING-RISK",
+      "node_id": "MASSIVE-CHEMICAL-SPILL-HAZARD",
       "entity_type": "HAZARD",
-      "description": "Occurs when pump casing temperature exceeds 85°C. Risk of seal failure and coolant leak."
+      "description": ""
     },
     {
-      "node_id": "CAVITATION-RISK",
-      "entity_type": "HAZARD",
-      "description": "Low suction pressure causes vapour bubble formation, leading to impeller erosion."
+      "node_id": "EQ-01",
+      "entity_type": "EQUIPMENT",
+      "description": "Main Turbine"
     },
     {
-      "node_id": "ISO-45001-SAFETY",
-      "entity_type": "COMPLIANCE_STANDARD",
-      "description": "ISO 45001:2018 Occupational Health and Safety Management System standard."
+      "node_id": "EQ-02",
+      "entity_type": "EQUIPMENT",
+      "description": "Heat Exchanger"
     },
     {
-      "node_id": "IEC-61511-FSS",
-      "entity_type": "COMPLIANCE_STANDARD",
-      "description": "IEC 61511 Functional Safety Standard for Safety Instrumented Systems (SIS)."
+      "node_id": "EQ-03",
+      "entity_type": "EQUIPMENT",
+      "description": "Coolant Pump"
+    },
+    {
+      "node_id": "EQ-04",
+      "entity_type": "EQUIPMENT",
+      "description": "Condenser"
+    },
+    {
+      "node_id": "EQ-05",
+      "entity_type": "EQUIPMENT",
+      "description": "Generator"
+    },
+    {
+      "node_id": "EQ-06",
+      "entity_type": "EQUIPMENT",
+      "description": "Injection Well Pump"
+    },
+    {
+      "node_id": "EQ-07",
+      "entity_type": "EQUIPMENT",
+      "description": "Control Valve A"
+    },
+    {
+      "node_id": "EQ-08",
+      "entity_type": "EQUIPMENT",
+      "description": "Control Valve B"
+    },
+    {
+      "node_id": "EQ-09",
+      "entity_type": "EQUIPMENT",
+      "description": "Cooling Tower"
+    },
+    {
+      "node_id": "EQ-10",
+      "entity_type": "EQUIPMENT",
+      "description": "Boiler"
+    },
+    {
+      "node_id": "SN-01",
+      "entity_type": "SENSOR",
+      "description": "Temp Sensor Alpha"
+    },
+    {
+      "node_id": "SN-02",
+      "entity_type": "SENSOR",
+      "description": "Pressure Gauge Beta"
+    },
+    {
+      "node_id": "SN-03",
+      "entity_type": "SENSOR",
+      "description": "Flow Meter Gamma"
+    },
+    {
+      "node_id": "SN-04",
+      "entity_type": "SENSOR",
+      "description": "Vibration Sensor Delta"
+    },
+    {
+      "node_id": "SN-05",
+      "entity_type": "SENSOR",
+      "description": "Level Sensor Epsilon"
+    },
+    {
+      "node_id": "SN-06",
+      "entity_type": "SENSOR",
+      "description": "Voltage Monitor Zeta"
+    },
+    {
+      "node_id": "SN-07",
+      "entity_type": "SENSOR",
+      "description": "RPM Sensor Eta"
+    },
+    {
+      "node_id": "SN-08",
+      "entity_type": "SENSOR",
+      "description": "Thermal Imager Theta"
     }
   ],
   "relationships": [
     {
-      "source_node": "PUMP-101A",
-      "target_node": "VALVE-204",
-      "relation_type": "CONNECTED_TO",
-      "context": "PUMP-101A discharge connects directly to VALVE-204 which controls flow into the reactor cooling loop."
+      "source_node": "ACID-STORAGE-TANK",
+      "target_node": "MASSIVE-CHEMICAL-SPILL-HAZARD",
+      "relation_type": "CAUSES",
+      "context": "A rupture in the ACID-STORAGE-TANK"
     },
     {
-      "source_node": "PUMP-101B",
-      "target_node": "VALVE-205",
-      "relation_type": "CONNECTED_TO",
-      "context": "Standby pump PUMP-101B routed through bypass VALVE-205 for seamless failover."
+      "source_node": "EQ-01",
+      "target_node": "EQ-05",
+      "relation_type": "DRIVES",
+      "context": "Main Turbine drives Generator"
     },
     {
-      "source_node": "VALVE-204",
-      "target_node": "HEAT-EXCHANGER-01",
-      "relation_type": "FEEDS_INTO",
-      "context": "Regulated coolant flow from VALVE-204 enters the primary side of HEAT-EXCHANGER-01."
-    },
-    {
-      "source_node": "TEMP-SENS-08",
-      "target_node": "PUMP-101A",
+      "source_node": "SN-04",
+      "target_node": "EQ-01",
       "relation_type": "MONITORS",
-      "context": "TEMP-SENS-08 continuously monitors casing temperature of PUMP-101A, triggering alarm at 85°C."
+      "context": "Vibration Sensor Delta monitors Main Turbine"
     },
     {
-      "source_node": "PRESS-SENS-12",
-      "target_node": "PUMP-101A",
+      "source_node": "SN-07",
+      "target_node": "EQ-01",
       "relation_type": "MONITORS",
-      "context": "Differential pressure sensor detects suction head loss indicative of cavitation onset."
+      "context": "RPM Sensor Eta monitors Main Turbine"
     },
     {
-      "source_node": "VIBRATION-SENS-07",
-      "target_node": "PUMP-101A",
+      "source_node": "EQ-02",
+      "target_node": "EQ-01",
+      "relation_type": "FEEDS_STEAM_TO",
+      "context": "Heat Exchanger feeds steam to Main Turbine"
+    },
+    {
+      "source_node": "SN-01",
+      "target_node": "EQ-02",
       "relation_type": "MONITORS",
-      "context": "Vibration sensor detects early-stage bearing wear on PUMP-101A to enable predictive maintenance."
+      "context": "Temp Sensor Alpha monitors Heat Exchanger"
     },
     {
-      "source_node": "FLOW-METER-03",
-      "target_node": "VALVE-204",
+      "source_node": "EQ-03",
+      "target_node": "EQ-02",
+      "relation_type": "CIRCULATES_FLUID_TO",
+      "context": "Coolant Pump circulates fluid to Heat Exchanger"
+    },
+    {
+      "source_node": "EQ-07",
+      "target_node": "EQ-03",
+      "relation_type": "REGULATES",
+      "context": "Control Valve A regulates Coolant Pump"
+    },
+    {
+      "source_node": "SN-03",
+      "target_node": "EQ-03",
       "relation_type": "MONITORS",
-      "context": "Flow meter verifies that VALVE-204 is delivering the required volumetric flow to the cooling loop."
+      "context": "Flow Meter Gamma monitors Coolant Pump"
     },
     {
-      "source_node": "TEMP-SENS-08",
-      "target_node": "OVERHEATING-RISK",
-      "relation_type": "TRIGGERS",
-      "context": "A reading above 85°C from TEMP-SENS-08 classifies the operating state as OVERHEATING-RISK."
+      "source_node": "EQ-01",
+      "target_node": "EQ-04",
+      "relation_type": "EXHAUSTS_STEAM_TO",
+      "context": "Main Turbine exhausts steam to Condenser"
     },
     {
-      "source_node": "PRESS-SENS-12",
-      "target_node": "CAVITATION-RISK",
-      "relation_type": "TRIGGERS",
-      "context": "Suction pressure drop below threshold detected by PRESS-SENS-12 raises CAVITATION-RISK alert."
+      "source_node": "SN-02",
+      "target_node": "EQ-04",
+      "relation_type": "MONITORS",
+      "context": "Pressure Gauge Beta monitors Condenser"
     },
     {
-      "source_node": "OVERHEATING-RISK",
-      "target_node": "EMERGENCY-SHUTDOWN-01",
-      "relation_type": "INITIATES",
-      "context": "Detection of OVERHEATING-RISK automatically initiates the EMERGENCY-SHUTDOWN-01 ESD sequence."
+      "source_node": "EQ-06",
+      "target_node": "EQ-09",
+      "relation_type": "PUMPS_WATER_TO",
+      "context": "Injection Well Pump pumps water to Cooling Tower"
     },
     {
-      "source_node": "CAVITATION-RISK",
-      "target_node": "EMERGENCY-SHUTDOWN-01",
-      "relation_type": "INITIATES",
-      "context": "Sustained cavitation triggers EMERGENCY-SHUTDOWN-01 to prevent catastrophic impeller failure."
+      "source_node": "SN-05",
+      "target_node": "EQ-09",
+      "relation_type": "MONITORS",
+      "context": "Level Sensor Epsilon monitors Cooling Tower"
     },
     {
-      "source_node": "PREVENTIVE-MAINT-PM03",
-      "target_node": "PUMP-101A",
-      "relation_type": "GOVERNS",
-      "context": "PM03 schedule mandates quarterly inspection and bearing lubrication for PUMP-101A."
+      "source_node": "EQ-08",
+      "target_node": "EQ-10",
+      "relation_type": "REGULATES",
+      "context": "Control Valve B regulates Boiler"
     },
     {
-      "source_node": "PREVENTIVE-MAINT-PM03",
-      "target_node": "PUMP-101B",
-      "relation_type": "GOVERNS",
-      "context": "PM03 schedule equally applies to standby pump PUMP-101B to ensure failover readiness."
+      "source_node": "SN-06",
+      "target_node": "EQ-05",
+      "relation_type": "MONITORS",
+      "context": "Voltage Monitor Zeta monitors Generator"
     },
     {
-      "source_node": "EMERGENCY-SHUTDOWN-01",
-      "target_node": "ISO-45001-SAFETY",
-      "relation_type": "GOVERNED_BY",
-      "context": "The ESD procedure SOP-ESD-01 is authored and audited in compliance with ISO 45001:2018."
-    },
-    {
-      "source_node": "PRESS-SENS-12",
-      "target_node": "IEC-61511-FSS",
-      "relation_type": "GOVERNED_BY",
-      "context": "PRESS-SENS-12 is classified as a Safety Instrumented Function (SIF) under IEC 61511 SIL-2."
-    },
-    {
-      "source_node": "TEMP-SENS-08",
-      "target_node": "IEC-61511-FSS",
-      "relation_type": "GOVERNED_BY",
-      "context": "TEMP-SENS-08 is part of the Safety Instrumented System and governed by IEC 61511 SIL-2."
-    },
-    {
-      "source_node": "PUMP-101A",
-      "target_node": "PUMP-101B",
-      "relation_type": "HAS_REDUNDANCY",
-      "context": "PUMP-101B serves as the automatic standby redundancy unit for PUMP-101A."
+      "source_node": "SN-08",
+      "target_node": "EQ-10",
+      "relation_type": "MONITORS",
+      "context": "Thermal Imager Theta monitors Boiler"
     }
   ]
 }

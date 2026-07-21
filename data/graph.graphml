@@ -1,0 +1,150 @@
+<?xml version='1.0' encoding='utf-8'?>
+<graphml xmlns="http://graphml.graphdrawing.org/xmlns" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://graphml.graphdrawing.org/xmlns http://graphml.graphdrawing.org/xmlns/1.0/graphml.xsd"><key id="d3" for="edge" attr.name="context" attr.type="string"/>
+<key id="d2" for="edge" attr.name="relation_type" attr.type="string"/>
+<key id="d1" for="node" attr.name="description" attr.type="string"/>
+<key id="d0" for="node" attr.name="entity_type" attr.type="string"/>
+<graph edgedefault="directed"><node id="ACID-STORAGE-TANK">
+  <data key="d0">EQUIPMENT</data>
+  <data key="d1">holds 50,000 gallons of corrosive material.</data>
+</node>
+<node id="MASSIVE-CHEMICAL-SPILL-HAZARD">
+  <data key="d0">HAZARD</data>
+  <data key="d1"></data>
+</node>
+<node id="EQ-01">
+  <data key="d0">EQUIPMENT</data>
+  <data key="d1">Main Turbine</data>
+</node>
+<node id="EQ-02">
+  <data key="d0">EQUIPMENT</data>
+  <data key="d1">Heat Exchanger</data>
+</node>
+<node id="EQ-03">
+  <data key="d0">EQUIPMENT</data>
+  <data key="d1">Coolant Pump</data>
+</node>
+<node id="EQ-04">
+  <data key="d0">EQUIPMENT</data>
+  <data key="d1">Condenser</data>
+</node>
+<node id="EQ-05">
+  <data key="d0">EQUIPMENT</data>
+  <data key="d1">Generator</data>
+</node>
+<node id="EQ-06">
+  <data key="d0">EQUIPMENT</data>
+  <data key="d1">Injection Well Pump</data>
+</node>
+<node id="EQ-07">
+  <data key="d0">EQUIPMENT</data>
+  <data key="d1">Control Valve A</data>
+</node>
+<node id="EQ-08">
+  <data key="d0">EQUIPMENT</data>
+  <data key="d1">Control Valve B</data>
+</node>
+<node id="EQ-09">
+  <data key="d0">EQUIPMENT</data>
+  <data key="d1">Cooling Tower</data>
+</node>
+<node id="EQ-10">
+  <data key="d0">EQUIPMENT</data>
+  <data key="d1">Boiler</data>
+</node>
+<node id="SN-01">
+  <data key="d0">SENSOR</data>
+  <data key="d1">Temp Sensor Alpha</data>
+</node>
+<node id="SN-02">
+  <data key="d0">SENSOR</data>
+  <data key="d1">Pressure Gauge Beta</data>
+</node>
+<node id="SN-03">
+  <data key="d0">SENSOR</data>
+  <data key="d1">Flow Meter Gamma</data>
+</node>
+<node id="SN-04">
+  <data key="d0">SENSOR</data>
+  <data key="d1">Vibration Sensor Delta</data>
+</node>
+<node id="SN-05">
+  <data key="d0">SENSOR</data>
+  <data key="d1">Level Sensor Epsilon</data>
+</node>
+<node id="SN-06">
+  <data key="d0">SENSOR</data>
+  <data key="d1">Voltage Monitor Zeta</data>
+</node>
+<node id="SN-07">
+  <data key="d0">SENSOR</data>
+  <data key="d1">RPM Sensor Eta</data>
+</node>
+<node id="SN-08">
+  <data key="d0">SENSOR</data>
+  <data key="d1">Thermal Imager Theta</data>
+</node>
+<edge source="ACID-STORAGE-TANK" target="MASSIVE-CHEMICAL-SPILL-HAZARD">
+  <data key="d2">CAUSES</data>
+  <data key="d3">A rupture in the ACID-STORAGE-TANK</data>
+</edge>
+<edge source="EQ-01" target="EQ-05">
+  <data key="d2">DRIVES</data>
+  <data key="d3">Main Turbine drives Generator</data>
+</edge>
+<edge source="EQ-01" target="EQ-04">
+  <data key="d2">EXHAUSTS_STEAM_TO</data>
+  <data key="d3">Main Turbine exhausts steam to Condenser</data>
+</edge>
+<edge source="EQ-02" target="EQ-01">
+  <data key="d2">FEEDS_STEAM_TO</data>
+  <data key="d3">Heat Exchanger feeds steam to Main Turbine</data>
+</edge>
+<edge source="EQ-03" target="EQ-02">
+  <data key="d2">CIRCULATES_FLUID_TO</data>
+  <data key="d3">Coolant Pump circulates fluid to Heat Exchanger</data>
+</edge>
+<edge source="EQ-06" target="EQ-09">
+  <data key="d2">PUMPS_WATER_TO</data>
+  <data key="d3">Injection Well Pump pumps water to Cooling Tower</data>
+</edge>
+<edge source="EQ-07" target="EQ-03">
+  <data key="d2">REGULATES</data>
+  <data key="d3">Control Valve A regulates Coolant Pump</data>
+</edge>
+<edge source="EQ-08" target="EQ-10">
+  <data key="d2">REGULATES</data>
+  <data key="d3">Control Valve B regulates Boiler</data>
+</edge>
+<edge source="SN-01" target="EQ-02">
+  <data key="d2">MONITORS</data>
+  <data key="d3">Temp Sensor Alpha monitors Heat Exchanger</data>
+</edge>
+<edge source="SN-02" target="EQ-04">
+  <data key="d2">MONITORS</data>
+  <data key="d3">Pressure Gauge Beta monitors Condenser</data>
+</edge>
+<edge source="SN-03" target="EQ-03">
+  <data key="d2">MONITORS</data>
+  <data key="d3">Flow Meter Gamma monitors Coolant Pump</data>
+</edge>
+<edge source="SN-04" target="EQ-01">
+  <data key="d2">MONITORS</data>
+  <data key="d3">Vibration Sensor Delta monitors Main Turbine</data>
+</edge>
+<edge source="SN-05" target="EQ-09">
+  <data key="d2">MONITORS</data>
+  <data key="d3">Level Sensor Epsilon monitors Cooling Tower</data>
+</edge>
+<edge source="SN-06" target="EQ-05">
+  <data key="d2">MONITORS</data>
+  <data key="d3">Voltage Monitor Zeta monitors Generator</data>
+</edge>
+<edge source="SN-07" target="EQ-01">
+  <data key="d2">MONITORS</data>
+  <data key="d3">RPM Sensor Eta monitors Main Turbine</data>
+</edge>
+<edge source="SN-08" target="EQ-10">
+  <data key="d2">MONITORS</data>
+  <data key="d3">Thermal Imager Theta monitors Boiler</data>
+</edge>
+</graph></graphml>

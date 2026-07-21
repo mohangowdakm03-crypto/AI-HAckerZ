@@ -1,0 +1,171 @@
+{
+    "nodes": [
+        {
+            "id": "EQ-01",
+            "name": "Main Turbine",
+            "type": "EQUIPMENT"
+        },
+        {
+            "id": "EQ-02",
+            "name": "Heat Exchanger",
+            "type": "EQUIPMENT"
+        },
+        {
+            "id": "EQ-03",
+            "name": "Coolant Pump",
+            "type": "EQUIPMENT"
+        },
+        {
+            "id": "EQ-04",
+            "name": "Condenser",
+            "type": "EQUIPMENT"
+        },
+        {
+            "id": "EQ-05",
+            "name": "Generator",
+            "type": "EQUIPMENT"
+        },
+        {
+            "id": "EQ-06",
+            "name": "Injection Well Pump",
+            "type": "EQUIPMENT"
+        },
+        {
+            "id": "EQ-07",
+            "name": "Control Valve A",
+            "type": "EQUIPMENT"
+        },
+        {
+            "id": "EQ-08",
+            "name": "Control Valve B",
+            "type": "EQUIPMENT"
+        },
+        {
+            "id": "EQ-09",
+            "name": "Cooling Tower",
+            "type": "EQUIPMENT"
+        },
+        {
+            "id": "EQ-10",
+            "name": "Boiler",
+            "type": "EQUIPMENT"
+        },
+        {
+            "id": "SN-01",
+            "name": "Temp Sensor Alpha",
+            "type": "SENSOR"
+        },
+        {
+            "id": "SN-02",
+            "name": "Pressure Gauge Beta",
+            "type": "SENSOR"
+        },
+        {
+            "id": "SN-03",
+            "name": "Flow Meter Gamma",
+            "type": "SENSOR"
+        },
+        {
+            "id": "SN-04",
+            "name": "Vibration Sensor Delta",
+            "type": "SENSOR"
+        },
+        {
+            "id": "SN-05",
+            "name": "Level Sensor Epsilon",
+            "type": "SENSOR"
+        },
+        {
+            "id": "SN-06",
+            "name": "Voltage Monitor Zeta",
+            "type": "SENSOR"
+        },
+        {
+            "id": "SN-07",
+            "name": "RPM Sensor Eta",
+            "type": "SENSOR"
+        },
+        {
+            "id": "SN-08",
+            "name": "Thermal Imager Theta",
+            "type": "SENSOR"
+        }
+    ],
+    "edges": [
+        {
+            "source": "EQ-01",
+            "target": "EQ-05",
+            "relationship": "DRIVES"
+        },
+        {
+            "source": "SN-04",
+            "target": "EQ-01",
+            "relationship": "MONITORS"
+        },
+        {
+            "source": "SN-07",
+            "target": "EQ-01",
+            "relationship": "MONITORS"
+        },
+        {
+            "source": "EQ-02",
+            "target": "EQ-01",
+            "relationship": "FEEDS_STEAM_TO"
+        },
+        {
+            "source": "SN-01",
+            "target": "EQ-02",
+            "relationship": "MONITORS"
+        },
+        {
+            "source": "EQ-03",
+            "target": "EQ-02",
+            "relationship": "CIRCULATES_FLUID_TO"
+        },
+        {
+            "source": "EQ-07",
+            "target": "EQ-03",
+            "relationship": "REGULATES"
+        },
+        {
+            "source": "SN-03",
+            "target": "EQ-03",
+            "relationship": "MONITORS"
+        },
+        {
+            "source": "EQ-01",
+            "target": "EQ-04",
+            "relationship": "EXHAUSTS_STEAM_TO"
+        },
+        {
+            "source": "SN-02",
+            "target": "EQ-04",
+            "relationship": "MONITORS"
+        },
+        {
+            "source": "EQ-06",
+            "target": "EQ-09",
+            "relationship": "PUMPS_WATER_TO"
+        },
+        {
+            "source": "SN-05",
+            "target": "EQ-09",
+            "relationship": "MONITORS"
+        },
+        {
+            "source": "EQ-08",
+            "target": "EQ-10",
+            "relationship": "REGULATES"
+        },
+        {
+            "source": "SN-06",
+            "target": "EQ-05",
+            "relationship": "MONITORS"
+        },
+        {
+            "source": "SN-08",
+            "target": "EQ-10",
+            "relationship": "MONITORS"
+        }
+    ]
+}

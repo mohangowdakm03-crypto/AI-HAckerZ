@@ -17,7 +17,7 @@ export default function Sidebar() {
   ];
 
   return (
-    <div className="apple-glass-panel" style={{
+    <div className="glass-panel" style={{
       width: '260px',
       height: '100vh',
       display: 'flex',
@@ -39,29 +39,19 @@ export default function Sidebar() {
         {links.map((link) => {
           const isActive = pathname === link.path;
           return (
-            <Link key={link.path} href={link.path} 
-              className={isActive ? 'apple-glass-capsule' : ''}
+            <Link 
+              key={link.path} 
+              href={link.path} 
+              className={isActive ? 'apple-glass-capsule' : 'apple-glass-capsule-inactive'}
               style={{
                 display: 'flex',
                 alignItems: 'center',
                 gap: '0.8rem',
                 padding: '0.7rem 1rem',
-                borderRadius: '100px',
-                color: isActive ? 'var(--txt)' : 'var(--txt2)',
-                background: isActive ? undefined : 'transparent',
                 textDecoration: 'none',
                 fontSize: '0.9rem',
                 fontWeight: isActive ? 600 : 500,
-                transition: 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)'
               }}
-              onMouseOver={!isActive ? (e) => {
-                e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)';
-                e.currentTarget.style.transform = 'translateY(-1px) scale(1.01)';
-              } : undefined}
-              onMouseOut={!isActive ? (e) => {
-                e.currentTarget.style.background = 'transparent';
-                e.currentTarget.style.transform = 'translateY(0) scale(1)';
-              } : undefined}
             >
               {link.icon}
               {link.name}

@@ -4,7 +4,6 @@ import React, { useState, useRef, useEffect } from 'react';
 import SiriOrb from '@/components/SiriOrb';
 import { UploadCloud, Send, Loader2, Sparkles, Trash2, Activity, FileText, AlertTriangle, Database, Download, Paperclip, Mic, MicOff, ShieldAlert, Plus, Clock, Search, MessageSquare } from 'lucide-react';
 import Link from 'next/link';
-import ChatInput from '@/components/ChatInput';
 
 type Message = {
   role: 'user' | 'assistant';
@@ -118,6 +117,7 @@ export default function Home() {
     currentThreadIdRef.current = currentThreadId;
   }, [currentThreadId]);
 
+  const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadStatus, setUploadStatus] = useState<string | null>(null);
@@ -127,6 +127,36 @@ export default function Home() {
   const [isGeneratingQueries, setIsGeneratingQueries] = useState<boolean>(false);
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const recognitionRef = useRef<any>(null);
+  const [isListening, setIsListening] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+      if (SpeechRecognition) {
+        recognitionRef.current = new SpeechRecognition();
+        recognitionRef.current.continuous = false;
+        recognitionRef.current.interimResults = false;
+        recognitionRef.current.lang = 'en-US';
+
+        recognitionRef.current.onresult = (event: any) => {
+          const transcript = event.results[0][0].transcript;
+          setInput((prev) => prev + (prev ? ' ' : '') + transcript);
+          setIsListening(false);
+        };
+
+        recognitionRef.current.onerror = (event: any) => {
+          console.error("Speech recognition error", event.error);
+          setIsListening(false);
+        };
+
+        recognitionRef.current.onend = () => {
+          setIsListening(false);
+        };
+      }
+    }
+  }, []);
 
   // --- Local Storage Persistence ---
   useEffect(() => {
@@ -163,6 +193,20 @@ export default function Home() {
     }
   }, [currentThreadId]);
   // --------------------------------
+
+  const toggleListening = () => {
+    if (isListening) {
+      recognitionRef.current?.stop();
+      setIsListening(false);
+    } else {
+      try {
+        recognitionRef.current?.start();
+        setIsListening(true);
+      } catch (e) {
+        console.error(e);
+      }
+    }
+  };
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -218,9 +262,12 @@ export default function Home() {
     window.open(`http://localhost:8000/api/export-report?session_id=${currentThreadId || 'default'}`, '_blank');
   };
 
-  const handleSend = async (text: string) => {
+  const handleSend = async (e?: React.FormEvent, overrideText?: string) => {
+    if (e) e.preventDefault();
+    const text = overrideText || input;
     if (!text.trim() || isLoading) return;
 
+    setInput('');
     setIsLoading(true);
 
     let activeId = currentThreadId;
@@ -396,12 +443,11 @@ export default function Home() {
             <button 
               className="apple-glass-capsule"
               style={{
-                padding: '0.6rem 1.2rem',
+                padding: '0.6rem 1rem',
                 display: 'flex',
                 alignItems: 'center',
                 gap: '0.5rem',
-                fontSize: '0.9rem',
-                fontWeight: 600
+                fontSize: '0.85rem'
               }}
             >
               <ShieldAlert size={16} color="var(--rose)" />
@@ -412,12 +458,11 @@ export default function Home() {
             className="apple-glass-capsule"
             onClick={handleExportReport}
             style={{
-              padding: '0.6rem 1.2rem',
+              padding: '0.6rem 1rem',
               display: 'flex',
               alignItems: 'center',
               gap: '0.5rem',
-              fontSize: '0.9rem',
-              fontWeight: 600
+              fontSize: '0.85rem'
             }}
           >
             <Download size={16} />
@@ -495,18 +540,18 @@ export default function Home() {
                   <button 
                     key={t.id}
                     className="apple-glass-panel"
-                    onClick={() => { setCurrentThreadId(t.id); setMessages(t.messages); setIsLoading(false); }}
+                    onClick={() => { setCurrentThreadId(t.id); setMessages(t.messages); setInput(''); setIsLoading(false); }}
                     style={{
+                      border: currentThreadId === t.id ? '1px solid var(--cyan)' : undefined,
+                      background: currentThreadId === t.id ? 'linear-gradient(145deg, rgba(2, 132, 199, 0.15) 0%, rgba(255, 255, 255, 0.05) 100%)' : undefined,
                       padding: '1rem',
                       color: 'var(--txt)',
                       cursor: 'pointer',
                       textAlign: 'left',
                       display: 'flex',
                       flexDirection: 'column',
-                      gap: '0.4rem',
-                      position: 'relative',
-                      border: currentThreadId === t.id ? '1px solid var(--cyan)' : undefined,
-                      boxShadow: currentThreadId === t.id ? 'inset 0 4px 10px rgba(255, 255, 255, 0.6), inset 0 -4px 10px rgba(0, 0, 0, 0.05), 0 20px 40px rgba(0, 0, 0, 0.08), 0 0 0 1px rgba(2, 132, 199, 0.5)' : undefined
+                      gap: '0.3rem',
+                      position: 'relative'
                     }}
                   >
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
@@ -582,7 +627,7 @@ export default function Home() {
                       <button 
                         key={idx}
                         className="liquid-btn"
-                        onClick={() => handleSend(q.query)} 
+                        onClick={() => handleSend(undefined, q.query)} 
                         style={{ padding: '1rem', textAlign: 'left', borderRadius: '16px' }}
                       >
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: q.color, marginBottom: '0.5rem' }}>
@@ -648,13 +693,117 @@ export default function Home() {
           </div>
 
           {/* Chat Input inside card */}
-          <ChatInput 
-            isLoading={isLoading}
-            isUploading={isUploading}
-            uploadStatus={uploadStatus}
-            onSend={handleSend}
-            onFileUpload={handleFileUpload}
-          />
+          <div style={{ padding: '1rem 1.5rem' }}>
+            <form onSubmit={handleSend} style={{ width: '100%', position: 'relative' }}>
+              <input 
+                type="file" 
+                ref={fileInputRef} 
+                onChange={handleFileUpload}
+                accept=".txt,.pdf,.json"
+                style={{ display: 'none' }} 
+              />
+              <div 
+                style={{
+                  display: 'flex',
+                  alignItems: 'flex-end',
+                  gap: '0.8rem',
+                  width: '100%'
+                }}
+              >
+                <button
+                  type="button"
+                  className="liquid-btn"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={isUploading}
+                  title="Upload Document"
+                  style={{
+                    width: '48px', height: '48px',
+                    flexShrink: 0,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    padding: 0
+                  }}
+                >
+                  {isUploading ? <Loader2 size={22} className="animate-spin" /> : <Paperclip size={22} />}
+                </button>
+                <button
+                  type="button"
+                  className="liquid-btn"
+                  onClick={toggleListening}
+                  title="Voice Input"
+                  style={{
+                    width: '48px', height: '48px',
+                    flexShrink: 0,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    padding: 0,
+                    color: isListening ? 'var(--rose)' : 'inherit'
+                  }}
+                >
+                  {isListening ? <MicOff size={22} className="pulse" /> : <Mic size={22} />}
+                </button>
+                <div className="liquid-input" style={{ flex: 1, display: 'flex', alignItems: 'center', padding: '0 1.2rem', minHeight: '48px' }}>
+                  <textarea 
+                    value={input}
+                    onChange={e => {
+                      setInput(e.target.value);
+                      e.target.style.height = '24px';
+                      e.target.style.height = Math.min(e.target.scrollHeight, 150) + 'px';
+                    }}
+                    onKeyDown={e => {
+                      if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        if (input.trim() && !isLoading) {
+                          handleSend(e as any);
+                          e.target.style.height = '24px';
+                        }
+                      }
+                    }}
+                    placeholder="Ask anything..."
+                    rows={1}
+                    style={{
+                      flex: 1, background: 'transparent', border: 'none', color: 'inherit',
+                      fontSize: '1rem', outline: 'none', resize: 'none',
+                      fontFamily: 'inherit', boxSizing: 'border-box',
+                      minHeight: '48px', maxHeight: '150px',
+                      padding: '14px 0', lineHeight: '20px', overflowY: 'auto'
+                    }}
+                  />
+                </div>
+                <button 
+                  type="submit"
+                  className="liquid-btn"
+                  disabled={isLoading || !input.trim()}
+                  style={{
+                    width: '48px', height: '48px',
+                    flexShrink: 0,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    padding: 0,
+                    color: input.trim() ? 'var(--cyan)' : 'var(--txt3)'
+                  }}
+                >
+                  <Send size={22} />
+                </button>
+              </div>
+            </form>
+            {uploadStatus && (
+              <div style={{
+                position: 'absolute',
+                bottom: 'calc(100% + 20px)',
+                left: '50%',
+                transform: 'translateX(-50%)',
+                background: 'var(--cyan)',
+                color: 'white',
+                padding: '0.6rem 1.2rem',
+                borderRadius: '100px',
+                fontSize: '0.85rem',
+                fontWeight: 600,
+                boxShadow: '0 8px 24px rgba(34, 211, 238, 0.4), 0 2px 8px rgba(0, 0, 0, 0.1)',
+                animation: 'fadeUp 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                zIndex: 50
+              }}>
+                {uploadStatus}
+              </div>
+            )}
+          </div>
         </div>
 
         {/* RIGHT COLUMN */}

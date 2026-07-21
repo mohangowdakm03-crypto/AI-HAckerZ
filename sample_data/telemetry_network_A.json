@@ -1,0 +1,15 @@
+{
+  "network": "SUBSTATION-ALPHA",
+  "data": [
+    {
+      "component": "MAIN-TRANSFORMER",
+      "connected_to": ["GRID-INTERFACE-1", "VOLTAGE-REGULATOR-A"],
+      "status": "ONLINE",
+      "last_inspection": "2026-06-01",
+      "known_hazards": [
+        "If MAIN-TRANSFORMER fails, it CAUSES a TOTAL-BLACKOUT-HAZARD."
+      ],
+      "monitored_by": "TEMP-SENS-TRANSFORMER"
+    }
+  ]
+}

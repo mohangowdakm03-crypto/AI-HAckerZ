@@ -15,7 +15,10 @@ venv.bak/
 graph_viz.html
 
 # Ignore auto-generated output graphs, but keep input/demo jsons
-data/graph.graphml
+data/graph_*.graphml
+data/graph_*.json
+data/chroma/
+data/demo_cache/
 
 # Extracted PyVis libraries that shouldn't be versioned directly
 lib/

@@ -512,43 +512,45 @@ CRITICAL RULES:
                 # Fallback to normal extraction
         
         # --- NORMAL EXTRACTION LOGIC ---
-        # If it's a JSON file, parse it directly and bypass LLM extraction
+        is_graph_contract = False
         if p.suffix.lower() == '.json':
-            print("   [*] Detected JSON file. Bypassing LLM extraction and parsing directly.")
             try:
                 with open(p, 'r', encoding='utf-8') as fh:
                     json_data = json.load(fh)
                 
                 # Auto-map nodes->entities and edges->relationships if needed
-                if 'nodes' in json_data and 'entities' not in json_data:
-                    json_data['entities'] = []
-                    for n in json_data['nodes']:
-                        json_data['entities'].append({
-                            'node_id': n.get('id', ''),
-                            'entity_type': n.get('type', 'UNKNOWN'),
-                            'description': n.get('name', '')
-                        })
-                if 'edges' in json_data and 'relationships' not in json_data:
-                    json_data['relationships'] = []
-                    for e in json_data['edges']:
-                        json_data['relationships'].append({
-                            'source_node': e.get('source', ''),
-                            'target_node': e.get('target', ''),
-                            'relation_type': e.get('relationship', ''),
-                            'context': ''
-                        })
+                if isinstance(json_data, dict):
+                    if 'nodes' in json_data and 'entities' not in json_data:
+                        json_data['entities'] = []
+                        for n in json_data['nodes']:
+                            json_data['entities'].append({
+                                'node_id': n.get('id', ''),
+                                'entity_type': n.get('type', 'UNKNOWN'),
+                                'description': n.get('name', '')
+                            })
+                    if 'edges' in json_data and 'relationships' not in json_data:
+                        json_data['relationships'] = []
+                        for e in json_data['edges']:
+                            json_data['relationships'].append({
+                                'source_node': e.get('source', ''),
+                                'target_node': e.get('target', ''),
+                                'relation_type': e.get('relationship', ''),
+                                'context': ''
+                            })
 
-                # Ensure it has entities and relationships
-                if not isinstance(json_data, dict) or 'entities' not in json_data or 'relationships' not in json_data:
-                    print("   [!] Uploaded JSON does not match the GraphRAG contract schema.")
-                    return False
-                
-                file_level_results = [json_data]
+                # Check if it now matches the schema
+                if isinstance(json_data, dict) and 'entities' in json_data and 'relationships' in json_data:
+                    print("   [*] Detected pre-computed Graph JSON. Bypassing LLM extraction.")
+                    file_level_results = [json_data]
+                    is_graph_contract = True
+                else:
+                    print("   [*] JSON does not match Graph schema. Falling back to LLM extraction.")
             except Exception as e:
                 print(f"   [!] Error parsing JSON file: {e}")
                 return False
-        else:
-            # Extract text for PDF and TXT
+
+        if not is_graph_contract:
+            # Extract text for PDF, TXT, or non-schema JSON
             if p.suffix.lower() == '.pdf':
                 text_content = self._extract_text_from_pdf(p)
             else:

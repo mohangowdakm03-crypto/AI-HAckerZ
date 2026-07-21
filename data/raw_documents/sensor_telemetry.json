@@ -1,0 +1,27 @@
+{
+  "log_batch": "BATCH-883",
+  "timestamp": "2026-07-20T10:00:00Z",
+  "sensors": [
+    {
+      "sensor_id": "TEMP-SENS-08",
+      "reading": "86.5 C",
+      "status": "WARNING",
+      "monitors": "COMPRESSOR-A",
+      "notes": "Temperature exceeds 85C. This condition CAUSES a severe OVERHEATING-HAZARD."
+    },
+    {
+      "sensor_id": "FLOW-METER-99",
+      "reading": "120 L/m",
+      "status": "NORMAL",
+      "monitors": "MAIN-PIPELINE",
+      "notes": "Flow rate is within acceptable parameters."
+    }
+  ],
+  "system_alerts": [
+    {
+      "alert_id": "ALRT-909",
+      "component_involved": "COMPRESSOR-A",
+      "description": "COMPRESSOR-A is CONNECTED_TO the BACKUP-GENERATOR. If it fails, it disrupts power."
+    }
+  ]
+}
