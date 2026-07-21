@@ -75,7 +75,8 @@ export default function ChatInput({
 
   return (
     <div className="px-6 py-4">
-      <form onSubmit={handleSend} className="apple-glass-panel w-full relative flex items-end gap-3 p-3">
+      <form onSubmit={handleSend} className="w-full relative">
+        <div className="apple-glass-panel flex items-end gap-3 w-full p-3" style={{ borderRadius: '32px' }}>
         <input 
           type="file" 
           ref={fileInputRef} 
@@ -126,13 +127,14 @@ export default function ChatInput({
           />
         </div>
         
-        <button 
-          type="submit"
-          className={`apple-convex-button w-12 h-12 flex-shrink-0 flex items-center justify-center p-0 ${input.trim() ? 'text-cyan-500' : 'text-slate-500'}`}
-          disabled={isLoading || !input.trim()}
+          <button 
+            type="submit"
+            className={`apple-convex-button w-12 h-12 flex-shrink-0 flex items-center justify-center p-0 ${input.trim() ? 'text-cyan-500' : 'text-slate-500'}`}
+            disabled={isLoading || !input.trim()}
           >
             <Send size={22} />
-        </button>
+          </button>
+        </div>
       </form>
       
       {uploadStatus && (
