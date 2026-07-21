@@ -86,7 +86,7 @@ export default function ChatInput({
         />
         <button
           type="button"
-          className="apple-convex-button w-12 h-12 flex-shrink-0 flex items-center justify-center p-0"
+          className="apple-convex-button w-14 h-14 flex-shrink-0 flex items-center justify-center p-0"
           onClick={() => fileInputRef.current?.click()}
             disabled={isUploading}
             title="Upload Document"
@@ -96,14 +96,14 @@ export default function ChatInput({
           
         <button
           type="button"
-          className={`apple-convex-button w-12 h-12 flex-shrink-0 flex items-center justify-center p-0 ${isListening ? 'text-rose-500' : 'text-inherit'}`}
+          className={`apple-convex-button w-14 h-14 flex-shrink-0 flex items-center justify-center p-0 ${isListening ? 'text-rose-500' : 'text-inherit'}`}
           onClick={toggleListening}
             title="Voice Input"
           >
             {isListening ? <MicOff size={22} className="pulse" /> : <Mic size={22} />}
           </button>
           
-        <div className="apple-glass-pill flex-1 flex items-center px-5 min-h-[48px]">
+        <div className="apple-glass-pill flex-1 flex items-center px-6 min-h-[56px]">
           <textarea 
               value={input}
               onChange={e => {
@@ -123,16 +123,16 @@ export default function ChatInput({
               }}
               placeholder="Ask anything..."
               rows={1}
-            className="flex-1 bg-transparent border-none text-inherit text-base outline-none resize-none font-inherit box-border min-h-[48px] max-h-[150px] py-[14px] leading-5 overflow-y-auto"
+            className="flex-1 bg-transparent border-none text-inherit text-base outline-none resize-none font-inherit box-border min-h-[56px] max-h-[150px] py-[18px] leading-5 overflow-y-auto"
           />
         </div>
         
           <button 
             type="submit"
-            className={`apple-convex-button w-12 h-12 flex-shrink-0 flex items-center justify-center p-0 ${input.trim() ? 'text-cyan-500' : 'text-slate-500'}`}
+            className={`apple-convex-button w-14 h-14 flex-shrink-0 flex items-center justify-center p-0 ${input.trim() ? 'text-cyan-500' : 'text-slate-500'}`}
             disabled={isLoading || !input.trim()}
           >
-            <Send size={22} />
+            <Send size={24} />
           </button>
         </div>
       </form>
