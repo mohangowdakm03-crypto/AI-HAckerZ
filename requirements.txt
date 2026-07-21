@@ -1,4 +1,12 @@
-# UI & Visualization
+# Backend API & Server
+fastapi>=0.100.0
+uvicorn>=0.23.0
+python-multipart>=0.0.6
+
+# Vector DB
+chromadb>=0.4.0
+
+# UI & Visualization (Legacy)
 streamlit>=1.30.0
 pyvis==0.3.2
 networkx>=3.0
@@ -13,3 +21,6 @@ pandas>=2.0.0
 
 # Image & Vision (optional, for batch extraction)
 pillow>=10.0.0
+
+# Export
+fpdf2>=2.7.0
