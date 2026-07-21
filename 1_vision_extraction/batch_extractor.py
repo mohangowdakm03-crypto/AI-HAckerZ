@@ -31,7 +31,7 @@ except Exception:
 class BatchExtractor:
     """
     Handles batch extraction of entities and relationships from multiple files
-    (text + pdf) using Ollama + Llama 3.2 with strict JSON schema compliance.
+    (text + pdf) using Ollama + Llama 3.1 with strict JSON schema compliance.
     """
 
     ALLOWED_ENTITY_TYPES = {"EQUIPMENT", "SENSOR", "PROCEDURE", "HAZARD", "COMPLIANCE_STANDARD"}
@@ -122,10 +122,11 @@ CRITICAL RULES:
 
         txt_files = list(input_path.glob("*.txt"))
         pdf_files = list(input_path.glob("*.pdf"))
-        all_files = sorted(txt_files) + sorted(pdf_files)
+        json_files = list(input_path.glob("*.json"))
+        all_files = sorted(txt_files) + sorted(pdf_files) + sorted(json_files)
 
         if not all_files:
-            print(f"[!] Warning: No .txt or .pdf files found in '{self.inputs_dir}/'")
+            print(f"[!] Warning: No .txt, .pdf, or .json files found in '{self.inputs_dir}/'")
             return []
 
         print(f"[✓] Found {len(all_files)} file(s) to process")
@@ -195,7 +196,7 @@ CRITICAL RULES:
                     user_prompt += f"\n\n{retry_prompt}"
 
                 response = ollama.chat(
-                    model='llama3.2',
+                    model='llama3.1',
                     messages=[
                         {'role': 'system', 'content': self.system_prompt},
                         {'role': 'user', 'content': user_prompt}
@@ -227,7 +228,7 @@ CRITICAL RULES:
                 continue
             except Exception as e:
                 print(f"   [!] Error during extraction on attempt {attempt}: {e}")
-                print(f"      Ensure Ollama is running and Llama 3.2 is pulled.")
+                print(f"      Ensure Ollama is running and Llama 3.1 is pulled.")
                 return {}
 
         return {}
@@ -437,48 +438,148 @@ CRITICAL RULES:
             return False, message
 
 
-    def process_single_file_and_merge(self, file_path: str, existing_json_path: str) -> bool:
-        """Extract entities/relationships from a single file and merge them into an existing graph contract."""
+    def process_single_file_and_merge(self, file_path: str, session_json_path: str) -> bool:
+        """
+        Process a single document, extract entities, and merge directly into a session's JSON contract.
+        If a pre-computed demo cache exists for this file, it will instantly load the cache to bypass LLM.
+        """
         p = Path(file_path)
         if not p.exists():
-            print(f"[!] File not found: {file_path}")
+            print(f"[-] File not found: {file_path}")
             return False
-
+            
         print(f"\n[*] Processing single file: {p.name}")
-        document_id = p.stem.upper().replace(' ', '-')
+        document_id = p.stem.upper().replace(' ', '_').replace('-', '_')
+        
+        # --- DEMO FAST-TRACK LOGIC ---
+        demo_cache_dir = Path(self.output_dir) / "demo_cache"
+        demo_file = demo_cache_dir / f"{p.stem}_demo.json"
+        
+        if demo_file.exists():
+            print(f"   [!] DEMO MODE FAST-TRACK: Loading pre-computed graph for {p.name} in 0.1s...")
+            try:
+                with open(demo_file, 'r', encoding='utf-8') as fh:
+                    cached_data = json.load(fh)
+                    
+                # Auto-map nodes->entities and edges->relationships if needed
+                if 'nodes' in cached_data and 'entities' not in cached_data:
+                    cached_data['entities'] = []
+                    for n in cached_data['nodes']:
+                        cached_data['entities'].append({
+                            'node_id': n.get('id', ''),
+                            'entity_type': n.get('type', 'UNKNOWN'),
+                            'description': n.get('name', '')
+                        })
+                if 'edges' in cached_data and 'relationships' not in cached_data:
+                    cached_data['relationships'] = []
+                    for e in cached_data['edges']:
+                        cached_data['relationships'].append({
+                            'source_node': e.get('source', ''),
+                            'target_node': e.get('target', ''),
+                            'relation_type': e.get('relationship', ''),
+                            'context': ''
+                        })
+                
+                # Merge cached data into session
+                if Path(session_json_path).exists():
+                    with open(session_json_path, 'r', encoding='utf-8') as f:
+                        session_data = json.load(f)
+                else:
+                    session_data = {"document_id": document_id, "entities": [], "relationships": []}
+                
+                # Merge entities
+                existing_node_ids = {e.get('node_id') for e in session_data.get('entities', [])}
+                for entity in cached_data.get('entities', []):
+                    if entity.get('node_id') not in existing_node_ids:
+                        session_data['entities'].append(entity)
+                        existing_node_ids.add(entity.get('node_id'))
+                        
+                # Merge relationships
+                existing_edges = {(r.get('source_node'), r.get('target_node'), r.get('relation_type')) for r in session_data.get('relationships', [])}
+                for rel in cached_data.get('relationships', []):
+                    edge_key = (rel.get('source_node'), rel.get('target_node'), rel.get('relation_type'))
+                    if edge_key not in existing_edges:
+                        session_data['relationships'].append(rel)
+                        existing_edges.add(edge_key)
+                        
+                with open(session_json_path, 'w', encoding='utf-8') as fh:
+                    json.dump(session_data, fh, indent=4)
+                    
+                print(f"[✓] Graph fast-tracked with {p.name}. Saved to {session_json_path}")
+                return True
+            except Exception as e:
+                print(f"   [!] Demo Cache failed to load: {e}")
+                # Fallback to normal extraction
+        
+        # --- NORMAL EXTRACTION LOGIC ---
+        # If it's a JSON file, parse it directly and bypass LLM extraction
+        if p.suffix.lower() == '.json':
+            print("   [*] Detected JSON file. Bypassing LLM extraction and parsing directly.")
+            try:
+                with open(p, 'r', encoding='utf-8') as fh:
+                    json_data = json.load(fh)
+                
+                # Auto-map nodes->entities and edges->relationships if needed
+                if 'nodes' in json_data and 'entities' not in json_data:
+                    json_data['entities'] = []
+                    for n in json_data['nodes']:
+                        json_data['entities'].append({
+                            'node_id': n.get('id', ''),
+                            'entity_type': n.get('type', 'UNKNOWN'),
+                            'description': n.get('name', '')
+                        })
+                if 'edges' in json_data and 'relationships' not in json_data:
+                    json_data['relationships'] = []
+                    for e in json_data['edges']:
+                        json_data['relationships'].append({
+                            'source_node': e.get('source', ''),
+                            'target_node': e.get('target', ''),
+                            'relation_type': e.get('relationship', ''),
+                            'context': ''
+                        })
 
-        # Extract text
-        if p.suffix.lower() == '.pdf':
-            text_content = self._extract_text_from_pdf(p)
+                # Ensure it has entities and relationships
+                if not isinstance(json_data, dict) or 'entities' not in json_data or 'relationships' not in json_data:
+                    print("   [!] Uploaded JSON does not match the GraphRAG contract schema.")
+                    return False
+                
+                file_level_results = [json_data]
+            except Exception as e:
+                print(f"   [!] Error parsing JSON file: {e}")
+                return False
         else:
-            with open(p, 'r', encoding='utf-8') as fh:
-                text_content = fh.read()
+            # Extract text for PDF and TXT
+            if p.suffix.lower() == '.pdf':
+                text_content = self._extract_text_from_pdf(p)
+            else:
+                with open(p, 'r', encoding='utf-8') as fh:
+                    text_content = fh.read()
 
-        if not text_content or not text_content.strip():
-            print("   [!] File is empty or unreadable.")
-            return False
+            if not text_content or not text_content.strip():
+                print("   [!] File is empty or unreadable.")
+                return False
 
-        # Chunk and extract
-        chunks = self._chunk_text(text_content)
-        if not chunks:
-            return False
+            # Chunk and extract
+            chunks = self._chunk_text(text_content)
+            if not chunks:
+                return False
 
-        file_level_results: List[Dict] = []
-        for j, chunk in enumerate(chunks, 1):
-            print(f"   -> Chunk {j}/{len(chunks)}")
-            extracted = self._extract_from_text(chunk, document_id)
-            if extracted:
-                file_level_results.append(extracted)
+            file_level_results = []
+            for j, chunk in enumerate(chunks, 1):
+                print(f"   -> Chunk {j}/{len(chunks)}")
+                extracted = self._extract_from_text(chunk, document_id)
+                if extracted:
+                    file_level_results.append(extracted)
 
-        if not file_level_results:
-            print("   [!] No data extracted.")
-            return False
+            if not file_level_results:
+                print("   [!] No data extracted.")
+                return False
 
         # Load existing graph
         existing_data = []
-        if os.path.exists(existing_json_path):
+        if os.path.exists(session_json_path):
             try:
-                with open(existing_json_path, 'r', encoding='utf-8') as fh:
+                with open(session_json_path, 'r', encoding='utf-8') as fh:
                     existing = json.load(fh)
                     # We wrap it in a list so _merge_data can treat it as one of the results
                     existing_data.append(existing)
@@ -490,10 +591,10 @@ CRITICAL RULES:
         master_contract = self._merge_data(all_results)
 
         try:
-            with open(existing_json_path, 'w', encoding='utf-8') as fh:
+            with open(session_json_path, 'w', encoding='utf-8') as fh:
                 json.dump(master_contract, fh, indent=2)
             
-            print(f"[✓] Graph updated with {p.name}. Saved to {existing_json_path}")
+            print(f"[✓] Graph updated with {p.name}. Saved to {session_json_path}")
             return True
         except Exception as e:
             print(f"   [!] Failed to save updated graph: {e}")

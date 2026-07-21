@@ -4,7 +4,7 @@ import ollama
 
 def extract_industrial_data():
     """
-    Extracts entities and relationships from industrial text using local Llama 3.2.
+    Extracts entities and relationships from industrial text using local Llama 3.1.
     Strictly outputs the JSON data contract required for the GraphRAG pipeline.
     """
     
@@ -50,12 +50,12 @@ CRITICAL RULES:
 3. Output ONLY the raw JSON object. No markdown blocks, no conversational text.
 """
 
-    print("[*] Initializing local extraction via Ollama (Llama 3.2)...")
+    print("[*] Initializing local extraction via Ollama (Llama 3.1)...")
     
     # 3. Execute Local Inference
     try:
         response = ollama.chat(
-            model='llama3.2',
+            model='llama3.1',
             messages=[
                 {'role': 'system', 'content': system_prompt},
                 {'role': 'user', 'content': f"Extract the data from this text:\n\n{raw_text}"}
@@ -89,7 +89,7 @@ CRITICAL RULES:
     except json.JSONDecodeError as e:
         print(f"[!] Error: Model failed to return valid JSON. Details: {e}")
     except Exception as e:
-        print(f"[!] Pipeline Error: Ensure Ollama is running and Llama 3.2 is pulled. Details: {e}")
+        print(f"[!] Pipeline Error: Ensure Ollama is running and Llama 3.1 is pulled. Details: {e}")
 
 if __name__ == "__main__":
     extract_industrial_data()
