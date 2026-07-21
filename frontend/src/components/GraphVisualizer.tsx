@@ -58,8 +58,8 @@ export default function GraphVisualizer({ data }: { data: any }) {
     if (fgRef.current) {
       // Increase repulsion between nodes to prevent text overlap
       fgRef.current.d3Force('charge').strength(-400);
-      // Increase the ideal distance between connected nodes
-      fgRef.current.d3Force('link').distance(100);
+      // Increase the ideal distance between connected nodes for better spacing
+      fgRef.current.d3Force('link').distance(150);
     }
   }, [data]);
 
@@ -120,7 +120,7 @@ export default function GraphVisualizer({ data }: { data: any }) {
           const risk = node.risk_score || 0;
           
           // Determine size based on risk
-          const baseSize = 12;
+          const baseSize = 7;
           const size = baseSize + (risk / 10);
           
           const isHighlighted = activeNode ? blastRadius.has(node.id) : false;
@@ -148,7 +148,7 @@ export default function GraphVisualizer({ data }: { data: any }) {
           }
 
           // Draw the Label Text below the node
-          const fontSize = 18 / globalScale;
+          const fontSize = 14 / globalScale;
           ctx.font = `500 ${fontSize}px Inter, sans-serif`;
           ctx.textAlign = 'center';
           ctx.textBaseline = 'top';
@@ -170,7 +170,7 @@ export default function GraphVisualizer({ data }: { data: any }) {
           ctx.fillText(label, node.x, node.y + size + 4);
         }}
         nodePointerAreaPaint={(node: any, color, ctx) => {
-          const size = 12 + ((node.risk_score || 0) / 10);
+          const size = 7 + ((node.risk_score || 0) / 10);
           ctx.fillStyle = color;
           ctx.beginPath();
           ctx.arc(node.x, node.y, size + 4, 0, 2 * Math.PI, false);
