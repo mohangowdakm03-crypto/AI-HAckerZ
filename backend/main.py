@@ -1,6 +1,7 @@
 import sys
 import os
 import json
+import re
 from pathlib import Path
 from fastapi import FastAPI, UploadFile, File, HTTPException, Response, Query
 from fastapi.middleware.cors import CORSMiddleware
@@ -26,11 +27,18 @@ app = FastAPI(title="AI-HackerZ Graph API")
 # Allow CORS for Next.js frontend
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["http://localhost:3000"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+def sanitize_filename(name: str) -> str:
+    """Strip out path traversal characters and keep only safe alphanumeric/dashes"""
+    return re.sub(r'[^a-zA-Z0-9_\-\.]', '', name)
+
+ALLOWED_EXTENSIONS = {".txt", ".pdf", ".json"}
+MAX_FILE_SIZE_MB = 50
 
 # Global sessions (in-memory state)
 sessions = {}
@@ -48,6 +56,8 @@ class ChatResponse(BaseModel):
 def get_session(session_id: str):
     if not session_id:
         session_id = "default"
+    
+    session_id = sanitize_filename(session_id)
         
     if session_id not in sessions:
         print(f"[*] Initializing new session graph: {session_id}")
@@ -322,15 +332,33 @@ def get_suggested_queries(session_id: Optional[str] = Query(None)):
 
 @app.post("/api/upload")
 def upload_document(file: UploadFile = File(...), session_id: Optional[str] = Query(None)):
+    if not file.filename:
+        raise HTTPException(status_code=400, detail="No file provided")
+        
+    ext = Path(file.filename).suffix.lower()
+    if ext not in ALLOWED_EXTENSIONS:
+        raise HTTPException(status_code=415, detail=f"Unsupported file type. Allowed: {', '.join(ALLOWED_EXTENSIONS)}")
+
+    safe_filename = sanitize_filename(file.filename)
+    if not safe_filename:
+        safe_filename = "unnamed_upload.txt"
+
     session = get_session(session_id)
     json_path = session["json_path"]
         
     raw_dir = DATA_DIR / "raw_documents"
     raw_dir.mkdir(exist_ok=True)
-    tmp_path = raw_dir / file.filename
+    tmp_path = raw_dir / safe_filename
     
+    # Stream file to disk to prevent DoS, enforcing max size
+    bytes_written = 0
     with open(tmp_path, "wb") as f:
-        f.write(file.file.read())
+        while chunk := file.file.read(1024 * 1024): # 1MB chunks
+            bytes_written += len(chunk)
+            if bytes_written > MAX_FILE_SIZE_MB * 1024 * 1024:
+                tmp_path.unlink(missing_ok=True)
+                raise HTTPException(status_code=413, detail=f"File exceeds maximum size of {MAX_FILE_SIZE_MB}MB")
+            f.write(chunk)
         
     extractor = BatchExtractor(inputs_dir=str(raw_dir), output_dir=str(DATA_DIR))
     # Pass the unique session json path
@@ -341,6 +369,6 @@ def upload_document(file: UploadFile = File(...), session_id: Optional[str] = Qu
         if session_id in sessions:
             del sessions[session_id]
         get_session(session_id)
-        return {"status": "success", "message": f"{file.filename} processed and graph updated."}
+        return {"status": "success", "message": f"{safe_filename} processed and graph updated."}
     else:
         raise HTTPException(status_code=500, detail="Failed to extract and merge document.")
