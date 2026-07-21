@@ -3,8 +3,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import SiriOrb from '@/components/SiriOrb';
 import { UploadCloud, Send, Loader2, Sparkles, Trash2, Activity, FileText, AlertTriangle, Database, Download, Paperclip, Mic, MicOff, ShieldAlert, Plus, Clock, Search, MessageSquare } from 'lucide-react';
-import ChatInputBar from '@/components/ChatInputBar';
 import Link from 'next/link';
+import ChatInput from '@/components/ChatInput';
 
 type Message = {
   role: 'user' | 'assistant';
@@ -211,6 +211,9 @@ export default function Home() {
     }
   }, [currentThreadId]);
 
+  // Quick queries are now generated instantly via getDynamicQueries() on render,
+  // avoiding the 20-30s local GPU bottleneck.
+
   const handleExportReport = () => {
     window.open(`http://localhost:8000/api/export-report?session_id=${currentThreadId || 'default'}`, '_blank');
   };
@@ -297,7 +300,10 @@ export default function Home() {
     }
   };
 
-  const onFileUpload = async (file: File) => {
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
     setIsUploading(true);
     setUploadStatus(`Ingesting ${file.name}...`);
     
@@ -640,8 +646,14 @@ export default function Home() {
             )}
           </div>
 
-          {/* Chat Input */}
-          <ChatInputBar isLoading={isLoading} handleSend={handleSend} onFileUpload={onFileUpload} uploadStatus={uploadStatus} />
+          {/* Chat Input inside card */}
+          <ChatInput 
+            isLoading={isLoading}
+            isUploading={isUploading}
+            uploadStatus={uploadStatus}
+            onSend={handleSend}
+            onFileUpload={handleFileUpload}
+          />
         </div>
 
         {/* RIGHT COLUMN */}
