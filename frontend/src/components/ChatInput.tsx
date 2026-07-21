@@ -76,7 +76,7 @@ export default function ChatInput({
   return (
     <div className="px-6 py-4">
       <form onSubmit={handleSend} className="w-full relative">
-        <div className="apple-glass-panel flex items-end gap-3 w-full p-3" style={{ borderRadius: '32px' }}>
+        <div className="flex items-end gap-3 w-full">
         <input 
           type="file" 
           ref={fileInputRef} 
