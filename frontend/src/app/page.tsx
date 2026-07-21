@@ -394,13 +394,14 @@ export default function Home() {
         <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
           <Link href={`/compliance?session_id=${currentThreadId || 'default'}`} style={{ textDecoration: 'none' }}>
             <button 
-              className="liquid-btn"
+              className="apple-glass-capsule"
               style={{
-                padding: '0.6rem 1rem',
+                padding: '0.6rem 1.2rem',
                 display: 'flex',
                 alignItems: 'center',
                 gap: '0.5rem',
-                fontSize: '0.85rem'
+                fontSize: '0.9rem',
+                fontWeight: 600
               }}
             >
               <ShieldAlert size={16} color="var(--rose)" />
@@ -408,14 +409,15 @@ export default function Home() {
             </button>
           </Link>
           <button 
-            className="liquid-btn"
+            className="apple-glass-capsule"
             onClick={handleExportReport}
             style={{
-              padding: '0.6rem 1rem',
+              padding: '0.6rem 1.2rem',
               display: 'flex',
               alignItems: 'center',
               gap: '0.5rem',
-              fontSize: '0.85rem'
+              fontSize: '0.9rem',
+              fontWeight: 600
             }}
           >
             <Download size={16} />
@@ -492,20 +494,19 @@ export default function Home() {
                 threads.map(t => (
                   <button 
                     key={t.id}
+                    className="apple-glass-panel"
                     onClick={() => { setCurrentThreadId(t.id); setMessages(t.messages); setIsLoading(false); }}
                     style={{
-                      background: currentThreadId === t.id ? 'var(--cyan-glow)' : 'var(--glass)',
-                      border: currentThreadId === t.id ? '1px solid var(--cyan)' : '1px solid var(--border)',
-                      padding: '0.8rem',
-                      borderRadius: '12px',
+                      padding: '1rem',
                       color: 'var(--txt)',
                       cursor: 'pointer',
                       textAlign: 'left',
-                      transition: 'all 0.2s',
                       display: 'flex',
                       flexDirection: 'column',
-                      gap: '0.3rem',
-                      position: 'relative'
+                      gap: '0.4rem',
+                      position: 'relative',
+                      border: currentThreadId === t.id ? '1px solid var(--cyan)' : undefined,
+                      boxShadow: currentThreadId === t.id ? 'inset 0 4px 10px rgba(255, 255, 255, 0.6), inset 0 -4px 10px rgba(0, 0, 0, 0.05), 0 20px 40px rgba(0, 0, 0, 0.08), 0 0 0 1px rgba(2, 132, 199, 0.5)' : undefined
                     }}
                   >
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>

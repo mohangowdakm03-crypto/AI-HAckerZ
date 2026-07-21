@@ -75,7 +75,7 @@ export default function ChatInput({
 
   return (
     <div className="px-6 py-4">
-      <form onSubmit={handleSend} className="w-full relative">
+      <form onSubmit={handleSend} className="apple-glass-panel w-full relative flex items-end gap-3 p-3">
         <input 
           type="file" 
           ref={fileInputRef} 
@@ -83,28 +83,27 @@ export default function ChatInput({
           accept=".txt,.pdf,.json"
           className="hidden" 
         />
-        <div className="flex items-end gap-3 w-full">
-          <button
-            type="button"
-            className="liquid-btn w-12 h-12 flex-shrink-0 flex items-center justify-center p-0"
-            onClick={() => fileInputRef.current?.click()}
+        <button
+          type="button"
+          className="apple-convex-button w-12 h-12 flex-shrink-0 flex items-center justify-center p-0"
+          onClick={() => fileInputRef.current?.click()}
             disabled={isUploading}
             title="Upload Document"
           >
             {isUploading ? <Loader2 size={22} className="animate-spin" /> : <Paperclip size={22} />}
           </button>
           
-          <button
-            type="button"
-            className={`liquid-btn w-12 h-12 flex-shrink-0 flex items-center justify-center p-0 ${isListening ? 'text-rose-500' : 'text-inherit'}`}
-            onClick={toggleListening}
+        <button
+          type="button"
+          className={`apple-convex-button w-12 h-12 flex-shrink-0 flex items-center justify-center p-0 ${isListening ? 'text-rose-500' : 'text-inherit'}`}
+          onClick={toggleListening}
             title="Voice Input"
           >
             {isListening ? <MicOff size={22} className="pulse" /> : <Mic size={22} />}
           </button>
           
-          <div className="liquid-input flex-1 flex items-center px-5 min-h-[48px]">
-            <textarea 
+        <div className="apple-glass-pill flex-1 flex items-center px-5 min-h-[48px]">
+          <textarea 
               value={input}
               onChange={e => {
                 setInput(e.target.value);
@@ -123,18 +122,17 @@ export default function ChatInput({
               }}
               placeholder="Ask anything..."
               rows={1}
-              className="flex-1 bg-transparent border-none text-inherit text-base outline-none resize-none font-inherit box-border min-h-[48px] max-h-[150px] py-[14px] leading-5 overflow-y-auto"
-            />
-          </div>
-          
-          <button 
-            type="submit"
-            className={`liquid-btn w-12 h-12 flex-shrink-0 flex items-center justify-center p-0 ${input.trim() ? 'text-cyan-500' : 'text-slate-500'}`}
-            disabled={isLoading || !input.trim()}
+            className="flex-1 bg-transparent border-none text-inherit text-base outline-none resize-none font-inherit box-border min-h-[48px] max-h-[150px] py-[14px] leading-5 overflow-y-auto"
+          />
+        </div>
+        
+        <button 
+          type="submit"
+          className={`apple-convex-button w-12 h-12 flex-shrink-0 flex items-center justify-center p-0 ${input.trim() ? 'text-cyan-500' : 'text-slate-500'}`}
+          disabled={isLoading || !input.trim()}
           >
             <Send size={22} />
-          </button>
-        </div>
+        </button>
       </form>
       
       {uploadStatus && (

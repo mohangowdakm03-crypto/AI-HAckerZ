@@ -189,3 +189,114 @@ a { color: inherit; text-decoration: none; }
     0 0 0 4px rgba(56, 189, 248, 0.15),
     0 1px 2px rgba(255, 255, 255, 0.8);
 }
+
+/* ─── Apple Liquid Glass ────────────────────────── */
+.apple-glass-panel {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.4) 0%, rgba(255, 255, 255, 0.1) 100%);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  border-bottom-color: rgba(255, 255, 255, 0.2);
+  border-right-color: rgba(255, 255, 255, 0.2);
+  border-radius: 20px;
+  box-shadow: 
+    inset 0 4px 10px rgba(255, 255, 255, 0.6),
+    inset 0 -4px 10px rgba(0, 0, 0, 0.05),
+    0 20px 40px rgba(0, 0, 0, 0.08),
+    0 8px 16px rgba(2, 132, 199, 0.05);
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+.apple-glass-panel:hover {
+  transform: translateY(-2px) scale(1.01);
+  box-shadow: 
+    inset 0 4px 12px rgba(255, 255, 255, 0.8),
+    inset 0 -4px 10px rgba(0, 0, 0, 0.05),
+    0 24px 48px rgba(0, 0, 0, 0.1),
+    0 12px 24px rgba(2, 132, 199, 0.08);
+}
+
+.apple-glass-capsule {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.5) 0%, rgba(255, 255, 255, 0.15) 100%);
+  backdrop-filter: blur(20px) saturate(160%);
+  -webkit-backdrop-filter: blur(20px) saturate(160%);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  border-bottom-color: rgba(255, 255, 255, 0.15);
+  border-right-color: rgba(255, 255, 255, 0.15);
+  border-radius: 100px;
+  box-shadow: 
+    inset 0 2px 6px rgba(255, 255, 255, 0.8),
+    inset 0 -2px 6px rgba(0, 0, 0, 0.05),
+    0 10px 20px rgba(0, 0, 0, 0.05),
+    0 4px 10px rgba(124, 58, 237, 0.06);
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  cursor: pointer;
+  color: var(--txt);
+}
+.apple-glass-capsule:hover {
+  transform: translateY(-2px) scale(1.02);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.65) 0%, rgba(255, 255, 255, 0.25) 100%);
+  box-shadow: 
+    inset 0 2px 8px rgba(255, 255, 255, 1),
+    inset 0 -2px 6px rgba(0, 0, 0, 0.05),
+    0 14px 28px rgba(0, 0, 0, 0.08),
+    0 6px 14px rgba(124, 58, 237, 0.08);
+}
+.apple-glass-capsule:active {
+  transform: translateY(1px) scale(0.98);
+  box-shadow: 
+    inset 0 4px 8px rgba(0, 0, 0, 0.1),
+    inset 0 -1px 2px rgba(255, 255, 255, 0.4),
+    0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.apple-convex-button {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.6) 0%, rgba(255, 255, 255, 0.1) 100%);
+  backdrop-filter: blur(16px) saturate(140%);
+  -webkit-backdrop-filter: blur(16px) saturate(140%);
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  border-bottom-color: rgba(255, 255, 255, 0.2);
+  border-right-color: rgba(255, 255, 255, 0.2);
+  border-radius: 50%;
+  box-shadow: 
+    inset 0 2px 4px rgba(255, 255, 255, 1),
+    inset 0 -2px 4px rgba(0, 0, 0, 0.15),
+    0 8px 16px rgba(0, 0, 0, 0.08);
+  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  cursor: pointer;
+}
+.apple-convex-button:hover {
+  transform: translateY(-2px) scale(1.05);
+  box-shadow: 
+    inset 0 3px 6px rgba(255, 255, 255, 1),
+    inset 0 -2px 4px rgba(0, 0, 0, 0.1),
+    0 12px 24px rgba(0, 0, 0, 0.1);
+}
+.apple-convex-button:active {
+  transform: translateY(1px) scale(0.95);
+  box-shadow: 
+    inset 0 4px 8px rgba(0, 0, 0, 0.2),
+    0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.apple-glass-pill {
+  background: rgba(255, 255, 255, 0.35);
+  backdrop-filter: blur(24px) saturate(150%);
+  -webkit-backdrop-filter: blur(24px) saturate(150%);
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  border-bottom-color: rgba(255, 255, 255, 0.9);
+  border-top-color: rgba(0, 0, 0, 0.15);
+  border-radius: 100px;
+  box-shadow: 
+    inset 0 4px 8px rgba(0, 0, 0, 0.08),
+    inset 0 1px 2px rgba(0, 0, 0, 0.1),
+    0 1px 3px rgba(255, 255, 255, 1);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.apple-glass-pill:focus-within {
+  background: rgba(255, 255, 255, 0.45);
+  border-color: rgba(56, 189, 248, 0.4);
+  box-shadow: 
+    inset 0 4px 8px rgba(0, 0, 0, 0.06),
+    0 0 0 4px rgba(56, 189, 248, 0.2),
+    0 1px 3px rgba(255, 255, 255, 1);
+}
