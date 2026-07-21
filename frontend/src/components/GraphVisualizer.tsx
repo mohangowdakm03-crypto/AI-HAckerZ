@@ -4,7 +4,7 @@ import dynamic from 'next/dynamic';
 
 const ForceGraph2D = dynamic(() => import('react-force-graph-2d'), { ssr: false });
 
-export default function GraphVisualizer({ data }: { data: any }) {
+const GraphVisualizer = React.memo(function GraphVisualizer({ data }: { data: any }) {
   const [dimensions, setDimensions] = useState({ width: 800, height: 600 });
   const containerRef = React.useRef<HTMLDivElement>(null);
   const fgRef = React.useRef<any>();
@@ -179,4 +179,6 @@ export default function GraphVisualizer({ data }: { data: any }) {
       />
     </div>
   );
-}
+});
+
+export default GraphVisualizer;
