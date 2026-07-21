@@ -75,8 +75,8 @@ export default function ChatInput({
 
   return (
     <div className="px-6 py-4">
-      <form onSubmit={handleSend} className="w-full relative">
-        <div className="flex items-end gap-3 w-full">
+      <form onSubmit={handleSend} className="w-full relative max-w-4xl mx-auto">
+        <div className="flex items-center justify-center gap-4 w-full">
         <input 
           type="file" 
           ref={fileInputRef} 
@@ -91,7 +91,7 @@ export default function ChatInput({
             disabled={isUploading}
             title="Upload Document"
           >
-            {isUploading ? <Loader2 size={22} className="animate-spin" /> : <Paperclip size={22} />}
+            {isUploading ? <Loader2 size={24} className="animate-spin" /> : <Paperclip size={24} />}
           </button>
           
         <button
@@ -100,10 +100,10 @@ export default function ChatInput({
           onClick={toggleListening}
             title="Voice Input"
           >
-            {isListening ? <MicOff size={22} className="pulse" /> : <Mic size={22} />}
+            {isListening ? <MicOff size={24} className="pulse" /> : <Mic size={24} />}
           </button>
           
-        <div className="apple-glass-pill flex-1 flex items-center px-6 min-h-[56px]">
+        <div className="apple-glass-pill flex-1 flex items-center px-5 min-h-[44px]">
           <textarea 
               value={input}
               onChange={e => {
@@ -123,7 +123,7 @@ export default function ChatInput({
               }}
               placeholder="Ask anything..."
               rows={1}
-            className="flex-1 bg-transparent border-none text-inherit text-base outline-none resize-none font-inherit box-border min-h-[56px] max-h-[150px] py-[18px] leading-5 overflow-y-auto"
+            className="flex-1 bg-transparent border-none text-inherit text-base outline-none resize-none font-inherit box-border min-h-[44px] max-h-[150px] py-[12px] leading-5 overflow-y-auto"
           />
         </div>
         
