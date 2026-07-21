@@ -4,7 +4,7 @@ import dynamic from 'next/dynamic';
 
 const ForceGraph2D = dynamic(() => import('react-force-graph-2d'), { ssr: false });
 
-const GraphVisualizer = React.memo(function GraphVisualizer({ data }: { data: any }) {
+export default function GraphVisualizer({ data }: { data: any }) {
   const [dimensions, setDimensions] = useState({ width: 800, height: 600 });
   const containerRef = React.useRef<HTMLDivElement>(null);
   const fgRef = React.useRef<any>();
@@ -102,10 +102,10 @@ const GraphVisualizer = React.memo(function GraphVisualizer({ data }: { data: an
           return 'rgba(15, 23, 42, 0.03)';
         }}
         linkWidth={(link: any) => {
-          if (!activeNode) return 1.5;
+          if (!activeNode) return 3;
           const sourceId = typeof link.source === 'object' ? link.source.id : link.source;
           const targetId = typeof link.target === 'object' ? link.target.id : link.target;
-          return (blastRadius.has(sourceId) && blastRadius.has(targetId)) ? 3 : 1;
+          return (blastRadius.has(sourceId) && blastRadius.has(targetId)) ? 5 : 2;
         }}
         linkDirectionalParticles={(link: any) => {
           if (!activeNode) return 2;
@@ -120,7 +120,7 @@ const GraphVisualizer = React.memo(function GraphVisualizer({ data }: { data: an
           const risk = node.risk_score || 0;
           
           // Determine size based on risk
-          const baseSize = 5;
+          const baseSize = 12;
           const size = baseSize + (risk / 10);
           
           const isHighlighted = activeNode ? blastRadius.has(node.id) : false;
@@ -148,7 +148,7 @@ const GraphVisualizer = React.memo(function GraphVisualizer({ data }: { data: an
           }
 
           // Draw the Label Text below the node
-          const fontSize = 12 / globalScale;
+          const fontSize = 18 / globalScale;
           ctx.font = `500 ${fontSize}px Inter, sans-serif`;
           ctx.textAlign = 'center';
           ctx.textBaseline = 'top';
@@ -170,7 +170,7 @@ const GraphVisualizer = React.memo(function GraphVisualizer({ data }: { data: an
           ctx.fillText(label, node.x, node.y + size + 4);
         }}
         nodePointerAreaPaint={(node: any, color, ctx) => {
-          const size = 5 + ((node.risk_score || 0) / 10);
+          const size = 12 + ((node.risk_score || 0) / 10);
           ctx.fillStyle = color;
           ctx.beginPath();
           ctx.arc(node.x, node.y, size + 4, 0, 2 * Math.PI, false);
@@ -179,6 +179,4 @@ const GraphVisualizer = React.memo(function GraphVisualizer({ data }: { data: an
       />
     </div>
   );
-});
-
-export default GraphVisualizer;
+}
